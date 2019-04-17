@@ -1,0 +1,299 @@
+# UR RTDE server for Common Robot Interface
+
+def run_server():    
+    def wait_for_command_reset():
+        command = read_input_integer_register(0)
+        while command != 0:
+            command = read_input_integer_register(0)
+            sync()
+        end
+    end
+
+    # initialize variables
+    PAYLOAD_MASS = 0.27
+    GRAVITY_ACCEL = [0.0, 0.0, 9.82]
+
+    linear_accel = 0.05
+    linear_speed = 0.05
+    angular_accel = 0.05
+    angular_speed = 0.05
+    blend_radius = 0
+    tcp = p[0, 0, 0, 0, 0, 0]
+    
+    set_payload(PAYLOAD_MASS)
+    set_gravity(GRAVITY_ACCEL)    
+    set_tcp(tcp)
+    
+    thread_running = False
+
+    # set up watchdog (period = 1000s)
+    rtde_set_watchdog("input_int_register_0", 0.001, "PAUSE")
+    
+    # initialize command status
+    write_output_integer_register(0, 0) 
+    
+    # wait for client to initialize (command = 0 = none)
+    command = read_input_integer_register(0)
+    while command != 0:
+        command = read_input_integer_register(0)
+        sync()
+    end
+    
+    # main server loop ...
+    while True:
+        command = read_input_integer_register(0)
+        if command == 0:    # none
+            # do nothing
+
+        elif command == 1:    # move joints
+            # read joint angles
+            j0 = read_input_float_register(0)
+            j1 = read_input_float_register(1)
+            j2 = read_input_float_register(2)
+            j3 = read_input_float_register(3)
+            j4 = read_input_float_register(4)
+            j5 = read_input_float_register(5)
+            joint_angles = [j0, j1, j2, j3, j4, j5]
+
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+
+            # wait for any previous worker thread to finish
+            if thread_running:
+                join worker_thread
+                thread_running = False
+            end
+
+            # run command            
+            if blend_radius > 0:
+                # run command asynchronously on worker thread 
+                global worker_q = joint_angles
+                global worker_a = angular_accel
+                global worker_v = angular_speed
+                global worker_r = blend_radius
+                thread move_joints_thread():
+                    movej(worker_q, a=worker_a, v=worker_v, r=worker_r)                                  
+                end                
+                thread_running = True
+                worker_thread = run move_joints_thread()
+            else:
+                # run command synchronously
+                movej(joint_angles, a=angular_accel, v=angular_speed, r=blend_radius)             
+            end
+            
+            # send command complete signal to client
+            write_output_integer_register(0, 0)
+
+        elif command == 2:    # move linear            
+            # read pose
+            x = read_input_float_register(0)
+            y = read_input_float_register(1)
+            z = read_input_float_register(2)
+            ax = read_input_float_register(3)
+            ay = read_input_float_register(4)
+            az = read_input_float_register(5)
+            pose = p[x, y, z, ax, ay, az]
+            
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+ 
+            # wait for any previous worker thread to finish
+            if thread_running:
+                join worker_thread
+                thread_running = False
+            end
+
+            # run command            
+            if blend_radius > 0:
+                # run command asynchronously on worker thread 
+                global worker_p = pose
+                global worker_a = linear_accel
+                global worker_v = linear_speed
+                global worker_r = blend_radius
+                thread move_linear_thread():
+                    movel(worker_p, a=worker_a, v=worker_v, r=worker_r)                
+                end
+                thread_running = True
+                worker_thread = run move_linear_thread()
+            else:
+                # run command synchronously
+                movel(pose, a=linear_accel, v=linear_speed, r=blend_radius)                
+            end
+
+            # send command complete signal to client
+            write_output_integer_register(0, 0)    
+
+        elif command == 3:    # move circular
+            # read via_pose and end_pose
+            x = read_input_float_register(6)
+            y = read_input_float_register(7)
+            z = read_input_float_register(8)
+            ax = read_input_float_register(9)
+            ay = read_input_float_register(10)
+            az = read_input_float_register(11)
+            via_pose = p[x, y, z, ax, ay, az]
+            
+            x = read_input_float_register(12)
+            y = read_input_float_register(13)
+            z = read_input_float_register(14)
+            ax = read_input_float_register(15)
+            ay = read_input_float_register(16)
+            az = read_input_float_register(17)
+            end_pose = p[x, y, z, ax, ay, az]            
+            
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+
+            # wait for any previous worker thread to finish
+            if thread_running:
+                join worker_thread
+                thread_running = False
+            end
+
+            # run command            
+            if blend_radius > 0:
+                # run command asynchronously on worker thread 
+                global worker_p_via = via_pose
+                global worker_p_end = end_pose        
+                global worker_a = linear_accel
+                global worker_v = linear_speed
+                global worker_r = blend_radius
+                thread move_circular_thread():
+                    movec(worker_p_via, worker_p_end, a=worker_a, v=worker_v, r=worker_r)                                    
+                end
+                thread_running = True
+                worker_thread = run move_circular_thread()
+            else:
+                # run command synchronously
+                movec(via_pose, end_pose, a=linear_accel, v=linear_speed, r=blend_radius)              
+            end
+
+            # send command complete signal to client
+            write_output_integer_register(0, 0)    
+
+        elif command == 4:    # set tcp
+            # read tcp
+            x = read_input_float_register(0)
+            y = read_input_float_register(1)
+            z = read_input_float_register(2)
+            ax = read_input_float_register(3)
+            ay = read_input_float_register(4)
+            az = read_input_float_register(5)
+            tcp = p[x, y, z, ax, ay, az]
+            
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+
+            # wait for any previous worker thread to finish
+            if thread_running:
+                join worker_thread
+                thread_running = False
+            end
+                        
+            # run command
+            set_tcp(tcp)
+
+            # send command complete signal to client
+            write_output_integer_register(0, 0)
+            
+        elif command == 5:    # set linear acceleration
+            # read linear acceleration
+            new_linear_accel = read_input_float_register(18)
+            
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+                        
+            # run command
+            linear_accel = new_linear_accel
+
+            # send command complete signal to client
+            write_output_integer_register(0, 0)            
+            
+        elif command == 6:    # set linear speed
+            # read linear speed
+            new_linear_speed = read_input_float_register(18)
+            
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+                        
+            # run command
+            linear_speed = new_linear_speed
+
+            # send command complete signal to client
+            write_output_integer_register(0, 0)
+
+        elif command == 7:    # set angular acceleration
+            # read angular acceleration
+            new_angular_accel = read_input_float_register(18)
+            
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+                        
+            # run command
+            angular_accel = new_angular_accel
+
+            # send command complete signal to client
+            write_output_integer_register(0, 0)    
+            
+        elif command == 8:    # set angular speed
+            # read angular speed
+            new_angular_speed = read_input_float_register(18)
+            
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+                        
+            # run command
+            angular_speed = new_angular_speed
+
+            # send command complete signal to client
+            write_output_integer_register(0, 0)
+            
+        elif command == 9:    # set blend radius
+            # read blend radius
+            new_blend_radius = read_input_float_register(18)
+            
+            # send command ack signal to client
+            write_output_integer_register(0, 1)
+
+            # wait for command reset
+            wait_for_command_reset()
+                        
+            # run command
+            blend_radius = new_blend_radius
+
+            # send command complete signal to client
+            write_output_integer_register(0, 0)
+
+        else:
+            popup("Invalid command")
+
+        end
+        sync()
+    end
+end
+
+run_server()
