@@ -35,19 +35,19 @@ class RTDEClient:
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
-    def _wait_for_command_completion(self):
-        """Handles server handshake.
+    def _wait_for_command_complete(self):
+        """Handles command completion handshaking with server.
         """
-        # wait for command ack signal from server
+        # wait for command complete signal from server
         self._state = self._con.receive()
         command_status = self._state.output_int_register_0
         while command_status == 0:
             self._state = self._con.receive()
             command_status = self._state.output_int_register_0
-        # reset command (0 = none)
+        # send ack to server (reset command = 0)
         self._command.input_int_register_0 = 0
         self._con.send(self._command)
-        # wait for command complete signal from server
+        # wait for command complete signal reset
         self._state = self._con.receive()
         command_status = self._state.output_int_register_0
         while command_status != 0:
@@ -123,7 +123,7 @@ class RTDEClient:
 
         self._con.send(self._params_vec_6d)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
         
     def move_linear(self, pose):
         """Executes a linear/cartesian move from the current base frame pose to
@@ -146,7 +146,7 @@ class RTDEClient:
 
         self._con.send(self._params_vec_6d)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
 
     def move_circular(self, via_pose, end_pose):
         """Executes a movement in a circular path from the current base frame
@@ -177,7 +177,7 @@ class RTDEClient:
 
         self._con.send(self._params_vec_6d_2)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
 
     def set_tcp(self, tcp):
         """Sets the tool center point (TCP) of the robot.
@@ -203,7 +203,7 @@ class RTDEClient:
 
         self._con.send(self._params_vec_6d)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
 
     def set_linear_accel(self, accel):
         """Sets the linear acceleration of the robot TCP (mm/s/s).
@@ -213,7 +213,7 @@ class RTDEClient:
         self._params_1d.input_double_register_18 = accel
         self._con.send(self._params_1d)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
 
     def set_linear_speed(self, speed):
         """Sets the linear speed of the robot TCP (mm/s).
@@ -223,7 +223,7 @@ class RTDEClient:
         self._params_1d.input_double_register_18 = speed
         self._con.send(self._params_1d)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
 
     def set_angular_accel(self, accel):
         """Sets the angular acceleration of the robot TCP (deg/s/s).
@@ -233,7 +233,7 @@ class RTDEClient:
         self._params_1d.input_double_register_18 = accel
         self._con.send(self._params_1d)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
 
     def set_angular_speed(self, speed):
         """Sets the angular speed of the robot TCP (deg/s).
@@ -243,7 +243,7 @@ class RTDEClient:
         self._params_1d.input_double_register_18 = speed
         self._con.send(self._params_1d)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
         
     def set_blend_radius(self, radius):
         """Sets the robot blend radius (mm).
@@ -253,7 +253,7 @@ class RTDEClient:
         self._params_1d.input_double_register_18 = radius
         self._con.send(self._params_1d)
         self._con.send(self._command)
-        self._wait_for_command_completion()
+        self._wait_for_command_complete()
 
     def get_joint_angles(self):
         """Returns the robot joint angles.

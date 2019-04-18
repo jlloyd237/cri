@@ -1,12 +1,20 @@
 # UR RTDE server for Common Robot Interface
 
-def run_server():    
-    def wait_for_command_reset():
+def run_server():
+
+    def send_command_complete():
+        # send command complete signal to client
+        write_output_integer_register(0, 1)
+
+        # wait for ack from client
         command = read_input_integer_register(0)
         while command != 0:
             command = read_input_integer_register(0)
             sync()
         end
+        
+        # reset command complete signal
+        write_output_integer_register(0, 0)
     end
 
     # initialize variables
@@ -42,10 +50,10 @@ def run_server():
     # main server loop ...
     while True:
         command = read_input_integer_register(0)
-        if command == 0:    # none
+        if command == 0:        # no command
             # do nothing
 
-        elif command == 1:    # move joints
+        elif command == 1:      # move joints
             # read joint angles
             j0 = read_input_float_register(0)
             j1 = read_input_float_register(1)
@@ -54,12 +62,6 @@ def run_server():
             j4 = read_input_float_register(4)
             j5 = read_input_float_register(5)
             joint_angles = [j0, j1, j2, j3, j4, j5]
-
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
 
             # wait for any previous worker thread to finish
             if thread_running:
@@ -83,11 +85,11 @@ def run_server():
                 # run command synchronously
                 movej(joint_angles, a=angular_accel, v=angular_speed, r=blend_radius)             
             end
-            
-            # send command complete signal to client
-            write_output_integer_register(0, 0)
 
-        elif command == 2:    # move linear            
+            # send command complete signal to client
+            send_command_complete()
+
+        elif command == 2:      # move linear            
             # read pose
             x = read_input_float_register(0)
             y = read_input_float_register(1)
@@ -96,12 +98,6 @@ def run_server():
             ay = read_input_float_register(4)
             az = read_input_float_register(5)
             pose = p[x, y, z, ax, ay, az]
-            
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
  
             # wait for any previous worker thread to finish
             if thread_running:
@@ -127,9 +123,9 @@ def run_server():
             end
 
             # send command complete signal to client
-            write_output_integer_register(0, 0)    
+            send_command_complete() 
 
-        elif command == 3:    # move circular
+        elif command == 3:      # move circular
             # read via_pose and end_pose
             x = read_input_float_register(6)
             y = read_input_float_register(7)
@@ -145,13 +141,7 @@ def run_server():
             ax = read_input_float_register(15)
             ay = read_input_float_register(16)
             az = read_input_float_register(17)
-            end_pose = p[x, y, z, ax, ay, az]            
-            
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
+            end_pose = p[x, y, z, ax, ay, az]
 
             # wait for any previous worker thread to finish
             if thread_running:
@@ -178,9 +168,9 @@ def run_server():
             end
 
             # send command complete signal to client
-            write_output_integer_register(0, 0)    
+            send_command_complete()   
 
-        elif command == 4:    # set tcp
+        elif command == 4:      # set tcp
             # read tcp
             x = read_input_float_register(0)
             y = read_input_float_register(1)
@@ -189,12 +179,6 @@ def run_server():
             ay = read_input_float_register(4)
             az = read_input_float_register(5)
             tcp = p[x, y, z, ax, ay, az]
-            
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
 
             # wait for any previous worker thread to finish
             if thread_running:
@@ -206,87 +190,57 @@ def run_server():
             set_tcp(tcp)
 
             # send command complete signal to client
-            write_output_integer_register(0, 0)
+            send_command_complete()
             
-        elif command == 5:    # set linear acceleration
+        elif command == 5:      # set linear acceleration
             # read linear acceleration
             new_linear_accel = read_input_float_register(18)
-            
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
                         
             # run command
             linear_accel = new_linear_accel
 
             # send command complete signal to client
-            write_output_integer_register(0, 0)            
+            send_command_complete()        
             
-        elif command == 6:    # set linear speed
+        elif command == 6:      # set linear speed
             # read linear speed
             new_linear_speed = read_input_float_register(18)
-            
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
                         
             # run command
             linear_speed = new_linear_speed
 
             # send command complete signal to client
-            write_output_integer_register(0, 0)
+            send_command_complete()
 
-        elif command == 7:    # set angular acceleration
+        elif command == 7:      # set angular acceleration
             # read angular acceleration
             new_angular_accel = read_input_float_register(18)
-            
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
                         
             # run command
             angular_accel = new_angular_accel
 
             # send command complete signal to client
-            write_output_integer_register(0, 0)    
+            send_command_complete()
             
-        elif command == 8:    # set angular speed
+        elif command == 8:      # set angular speed
             # read angular speed
             new_angular_speed = read_input_float_register(18)
-            
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
                         
             # run command
             angular_speed = new_angular_speed
 
             # send command complete signal to client
-            write_output_integer_register(0, 0)
+            send_command_complete()
             
-        elif command == 9:    # set blend radius
+        elif command == 9:      # set blend radius
             # read blend radius
             new_blend_radius = read_input_float_register(18)
-            
-            # send command ack signal to client
-            write_output_integer_register(0, 1)
-
-            # wait for command reset
-            wait_for_command_reset()
                         
             # run command
             blend_radius = new_blend_radius
 
             # send command complete signal to client
-            write_output_integer_register(0, 0)
+            send_command_complete()
 
         else:
             popup("Invalid command")

@@ -2,6 +2,7 @@
 """Simple robot jogger app based on Common Robot Interface.
 """
 
+import os
 import sys
 import ipaddress
 import logging
@@ -81,7 +82,7 @@ class JoggerDialog(QDialog):
         
         self.setFixedSize(800, 450)
         self.setWindowTitle("Robot Jogger")
-        self.setWindowIcon(QIcon("robot.png"))         
+        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), "robot.png")))         
         self.setToolTip("Robot jogger based on Common Robot Interface")
      
         self.robotLabel = QLabel("robot:")
