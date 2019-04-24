@@ -6,7 +6,7 @@ Adapted from Open ABB python client (https://github.com/robotics/open_abb)
 
 import time
 import socket
-from struct import pack, unpack_from
+from struct import pack, unpack_from, calcsize
 
 import numpy as np
 
@@ -71,11 +71,11 @@ class ABBClient:
         self.sock.send(sendMsg)
         time.sleep(self._delay)
         receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>Hs', receiveMsg)
+        retvals = unpack_from('>H', receiveMsg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
-            raise ABBClient.CommandFailed  
-        info = retvals[1].decode()
+            raise ABBClient.CommandFailed            
+        info = receiveMsg[calcsize('>H'):].decode()
         return info 
 
     def move_joints(self, joint_angles):

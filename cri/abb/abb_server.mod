@@ -15,8 +15,7 @@ MODULE ABBServer
 	VAR wzstationary cyl;
 
 	!// Communications
-	PERS string serverIp := "164.11.72.156";
-	!//PERS string serverIp := "127.0.0.1";	!// For testing in RobotStudio simulator
+	PERS string serverIp := "127.0.0.1";
 	PERS num serverPort := 5000;
 	VAR socketdev clientSocket;
 	VAR socketdev serverSocket;
@@ -108,6 +107,7 @@ MODULE ABBServer
 
 		!// Initialize socket connection
 		connected := FALSE;
+	    serverIp := GetSysInfo(\LanIp);
 		InitializeSocket serverIp, serverPort;	
 		connected := TRUE;
 		
@@ -126,9 +126,10 @@ MODULE ABBServer
 			TEST command
 				CASE 0:		!// Get info
 					!// Perform command					
-					info := GetSysInfo(\SerialNo) + "*";
-					info := info + GetSysInfo(\SWVersion) + "*";
-					info := info + GetSysInfo(\RobotType);
+					info := GetSysInfo(\SerialNo) + ", ";
+					info := info + GetSysInfo(\SWVersion) + ", ";
+					info := info + GetSysInfo(\RobotType) + ", ";
+					info := info + GetSysInfo(\LanIp);
 
 					!// Compile response
 					ClearRawBytes sendMsg;
