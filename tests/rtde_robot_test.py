@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 
-from cri.robot import AsyncRobot
+from cri.robot import SyncRobot, AsyncRobot
 from cri.controller import RTDEController
 
 np.set_printoptions(precision=2, suppress=True)
@@ -17,9 +17,9 @@ def main():
 #    work_frame = (109.1, -487.0, 341.3, 180, 0, -90)   # base frame: x->right, y->back, z->up
     work_frame = (487.0, -109.1, 341.3, 180, 0, 180)    # base frame: x->front, y->right, z->up
     
-    with AsyncRobot(RTDEController(ip='192.11.72.10')) as robot:
+    with AsyncRobot(SyncRobot(RTDEController(ip='192.11.72.10'))) as robot:
     # For testing in URSim simulator
-#    with AsyncRobot(RTDEController(ip='127.0.0.1')) as robot:
+#    with AsyncRobot(SyncRobot(RTDEController(ip='127.0.0.1'))) as robot:
         # Set TCP, linear speed,  angular speed and coordinate frame
         robot.tcp = (0, 0, 89.1, 0, 0, 0)
         robot.linear_speed = 50

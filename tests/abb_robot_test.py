@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 
-from cri.robot import AsyncRobot
+from cri.robot import SyncRobot, AsyncRobot
 from cri.controller import ABBController
 
 np.set_printoptions(precision=2, suppress=True)
@@ -16,9 +16,9 @@ def main():
     base_frame = (0, 0, 0, 0, 0, 0)
     work_frame = (400, 0, 300, 180, 0, 180)     # base frame: x->front, y->right, z->up
     
-    with AsyncRobot(ABBController(ip='164.11.72.156', port=5000)) as robot:
+    with AsyncRobot(SyncRobot(ABBController(ip='164.11.72.156', port=5000))) as robot:
     # For testing in RobotStudio simulator
-#    with AsyncRobot(ABBController(ip='127.0.0.1', port=5000)) as robot:      
+#    with AsyncRobot(SyncRobot(ABBController(ip='127.0.0.1', port=5000))) as robot:
         # Set TCP, linear speed,  angular speed and coordinate frame
         robot.tcp = (0, 0, 89.1, 0, 0, 0)
         robot.linear_speed = 50
