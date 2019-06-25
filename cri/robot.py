@@ -256,7 +256,7 @@ class SyncRobot(Robot):
     """
     
     def __init__(self, controller):
-        self._controller = controller
+        self.controller = controller
         try:
             self.axes = 'rxyz'
             self.tcp = (0, 0, 0, 0, 0, 0)           # tool flange frame (euler)
@@ -265,14 +265,14 @@ class SyncRobot(Robot):
             self.angular_speed = 20                 # deg/s
             self.blend_radius = 0                   # mm
         except:
-            self._controller.close()
+            self.controller.close()
             raise
 
     @property
     def info(self):
         """Returns a unique robot identifier string.
         """
-        return self._controller.info
+        return self.controller.info
 
     @property
     def axes(self):
@@ -290,14 +290,14 @@ class SyncRobot(Robot):
     def tcp(self):
         """Returns the tool center point (TCP) of the robot.
         """
-        return quat2euler(self._controller.tcp, self._axes)
+        return quat2euler(self.controller.tcp, self._axes)
 
     @tcp.setter
     def tcp(self, tcp):
         """Sets the tool center point (TCP) of the robot.
         """
         check_pose(tcp)
-        self._controller.tcp = euler2quat(tcp, self._axes)
+        self.controller.tcp = euler2quat(tcp, self._axes)
 
     @property
     def coord_frame(self):
@@ -317,49 +317,49 @@ class SyncRobot(Robot):
     def linear_speed(self):
         """Returns the linear speed of the robot TCP (mm/s).
         """
-        return self._controller.linear_speed
+        return self.controller.linear_speed
 
     @linear_speed.setter
     def linear_speed(self, speed):
         """Sets the linear speed of the robot TCP (mm/s).
         """
-        self._controller.linear_speed = speed
+        self.controller.linear_speed = speed
 
     @property
     def angular_speed(self):
         """Returns the angular speed of the robot TCP (deg/s).
         """
-        return self._controller.angular_speed
+        return self.controller.angular_speed
 
     @angular_speed.setter
     def angular_speed(self, speed):
         """Sets the angular speed of the robot TCP (deg/s).
         """
-        self._controller.angular_speed = speed
+        self.controller.angular_speed = speed
 
     @property
     def blend_radius(self):
         """Returns the robot blend radius (mm).
         """
-        return self._controller.blend_radius
+        return self.controller.blend_radius
 
     @blend_radius.setter
     def blend_radius(self, blend_radius):
         """Sets the robot blend radius (mm).
         """
-        self._controller.blend_radius = blend_radius
+        self.controller.blend_radius = blend_radius
 
     @property
     def joint_angles(self):
         """ Returns the robot joint angles.
         """
-        return self._controller.joint_angles
+        return self.controller.joint_angles
 
     @property
     def pose(self):
         """Returns the TCP pose in the reference coordinate frame.
         """
-        pose_q = self._controller.pose
+        pose_q = self.controller.pose
         if self._is_base_frame:
             return quat2euler(pose_q, self._axes)
         else:
@@ -369,7 +369,7 @@ class SyncRobot(Robot):
         """Executes an immediate move to the specified joint angles.
         """
         check_joint_angles(joint_angles)
-        self._controller.move_joints(joint_angles)
+        self.controller.move_joints(joint_angles)
     
     def move_linear(self, pose):
         """Executes a linear/cartesian move from the current TCP pose to the
@@ -378,9 +378,9 @@ class SyncRobot(Robot):
         check_pose(pose)
         pose_q = euler2quat(pose, self._axes)
         if self._is_base_frame:
-            self._controller.move_linear(pose_q)
+            self.controller.move_linear(pose_q)
         else:
-            self._controller.move_linear(inv_transform(pose_q, self._coord_frame_q))
+            self.controller.move_linear(inv_transform(pose_q, self._coord_frame_q))
 
     def move_circular(self, via_pose, end_pose):
         """Executes a movement in a circular path from the current TCP pose,
@@ -391,15 +391,15 @@ class SyncRobot(Robot):
         via_pose_q = euler2quat(via_pose, self._axes)
         end_pose_q = euler2quat(end_pose, self._axes)
         if self._is_base_frame:
-            self._controller.move_circular(via_pose_q, end_pose_q)
+            self.controller.move_circular(via_pose_q, end_pose_q)
         else:
-            self._controller.move_circular(inv_transform(via_pose_q, self._coord_frame_q),
+            self.controller.move_circular(inv_transform(via_pose_q, self._coord_frame_q),
                                      inv_transform(end_pose_q, self._coord_frame_q))
    
     def close(self):
         """Releases any resources held by the robot (e.g., sockets).
         """
-        self._controller.close()      
+        self.controller.close()      
 
 
 class AsyncRobot(Robot):
@@ -408,83 +408,83 @@ class AsyncRobot(Robot):
     """
     
     def __init__(self, sync_robot):
-        self._sync_robot = sync_robot
+        self.sync_robot = sync_robot
         try:
             self._worker = None
             self._results = queue.Queue()
             self._busy = False
         except:
-            self._sync_robot.close()
+            self.sync_robot.close()
             raise
 
     @property
     def info(self):
-        return self._sync_robot.info
+        return self.sync_robot.info
 
     @property
     def axes(self):
-        return self._sync_robot.axes
+        return self.sync_robot.axes
 
     @axes.setter
     def axes(self, axes):
-        self._sync_robot.axes = axes
+        self.sync_robot.axes = axes
 
     @property
     def tcp(self):
-        return self._sync_robot.tcp
+        return self.sync_robot.tcp
 
     @tcp.setter
     def tcp(self, tcp):
-        self._sync_robot.tcp = tcp
+        self.sync_robot.tcp = tcp
 
     @property
     def coord_frame(self):
-        return self._sync_robot.coord_frame
+        return self.sync_robot.coord_frame
 
     @coord_frame.setter
     def coord_frame(self, frame):
-        self._sync_robot.coord_frame = frame
+        self.sync_robot.coord_frame = frame
 
     @property
     def linear_speed(self):
-        return self._sync_robot.linear_speed
+        return self.sync_robot.linear_speed
 
     @linear_speed.setter
     def linear_speed(self, speed):
-        self._sync_robot.linear_speed = speed
+        self.sync_robot.linear_speed = speed
 
     @property
     def angular_speed(self):
-        return self._sync_robot.angular_speed
+        return self.sync_robot.angular_speed
 
     @angular_speed.setter
     def angular_speed(self, speed):
-        self._sync_robot.angular_speed = speed
+        self.sync_robot.angular_speed = speed
 
     @property
     def blend_radius(self):
-        return self._sync_robot.blend_radius
+        return self.sync_robot.blend_radius
 
     @blend_radius.setter
     def blend_radius(self, blend_radius):
-        self._sync_robot.blend_radius = blend_radius
+        self.sync_robot.blend_radius = blend_radius
 
     @property
     def joint_angles(self):
-        return self._sync_robot.joint_angles
+        return self.sync_robot.joint_angles
 
     @property
     def pose(self):
-        return self._sync_robot.pose
+        return self.sync_robot.pose
 
     def move_joints(self, joint_angles):
-        self._sync_robot.move_joints(joint_angles)
+        self.sync_robot.move_joints(joint_angles)
 
     def move_linear(self, pose):
-        self._sync_robot.move_linear(pose)
+        self.sync_robot.move_linear(pose)
 
     def move_circular(self, via_pose, end_pose):
-        self._sync_robot.move_circular(via_pose, end_pose)
+        self.sync_robot.move_circular(via_pose, end_pose)
 
     def async_move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
@@ -497,7 +497,7 @@ class AsyncRobot(Robot):
             raise AsyncBusy  
         self._busy = True
         self._worker = Thread(target=lambda joint_angles, results: \
-                              results.put(self._sync_robot.move_joints(joint_angles)), \
+                              results.put(self.sync_robot.move_joints(joint_angles)), \
                               args=(joint_angles, self._results))
         self._worker.start()
     
@@ -513,7 +513,7 @@ class AsyncRobot(Robot):
             raise AsyncBusy   
         self._busy = True
         self._worker = Thread(target=lambda pose, results: \
-                              results.put(self._sync_robot.move_linear(pose)), \
+                              results.put(self.sync_robot.move_linear(pose)), \
                               args=(pose, self._results))
         self._worker.start()
 
@@ -529,7 +529,7 @@ class AsyncRobot(Robot):
             raise AsyncBusy
         self._busy = True
         self._worker = Thread(target=lambda via_pose, end_pose, results: \
-                              results.put(self._sync_robot.move_circular(via_pose, end_pose)),\
+                              results.put(self.sync_robot.move_circular(via_pose, end_pose)),\
                               args=(via_pose, end_pose, self._results))
         self._worker.start()
     
@@ -553,4 +553,4 @@ class AsyncRobot(Robot):
     def close(self):
         """Releases any resources held by the robot (e.g., sockets).
         """
-        self._sync_robot.close()
+        self.sync_robot.close()
