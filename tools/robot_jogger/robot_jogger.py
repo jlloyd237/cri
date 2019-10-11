@@ -421,6 +421,8 @@ class JoggerDialog(QDialog):
         axes = self.sender().currentText()
         logger.debug("JoggerDialog.onAxesChanged(axes={})".format(axes))        
         self.robot.axes = axes
+        self.tcpEditWidget.value = self.robot.tcp
+        self.coordFrameEditWidget.value = self.robot.coord_frame
     
     def onLinearSpeedChanged(self):
         linearSpeed = self.sender().text()
