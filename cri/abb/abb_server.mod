@@ -108,6 +108,9 @@ MODULE ABBServer
 		!// Initialize socket connection
 		connected := FALSE;
 	    serverIp := GetSysInfo(\LanIp);
+		IF serverIp = "VC" THEN
+			serverIp := "127.0.0.1";
+		ENDIF
 		InitializeSocket serverIp, serverPort;	
 		connected := TRUE;
 		
