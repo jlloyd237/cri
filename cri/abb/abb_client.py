@@ -67,15 +67,15 @@ class ABBClient:
         """retvalsurns a unique robot identifier string.
         """
         command = 0
-        sendMsg = pack('>H', command)
-        self.sock.send(sendMsg)
+        send_msg = pack('>H', command)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>H', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>H', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed            
-        info = receiveMsg[calcsize('>H'):].decode()
+        info = receive_msg[calcsize('>H'):].decode()
         return info 
 
     def move_joints(self, joint_angles):
@@ -89,11 +89,11 @@ class ABBClient:
         joint_angles *= self._scale_angle
 
         command = 1
-        sendMsg = pack('>Hffffff', command, *joint_angles)
-        self.sock.send(sendMsg)
+        send_msg = pack('>Hffffff', command, *joint_angles)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>H', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>H', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed  
@@ -110,11 +110,11 @@ class ABBClient:
         pose[:3] *= self._scale_linear
         
         command = 2
-        sendMsg = pack('>Hfffffff', command, *pose)
-        self.sock.send(sendMsg)
+        send_msg = pack('>Hfffffff', command, *pose)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>H', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>H', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed       
@@ -133,11 +133,11 @@ class ABBClient:
         end_pose[:3] *= self._scale_linear        
         
         command = 3
-        sendMsg = pack('>Hffffffffffffff', command, *via_pose, *end_pose)
-        self.sock.send(sendMsg)
+        send_msg = pack('>Hffffffffffffff', command, *via_pose, *end_pose)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>H', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>H', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed  
@@ -157,11 +157,11 @@ class ABBClient:
         tcp[:3] *= self._scale_linear
         
         command = 4
-        sendMsg = pack('>Hfffffff', command, *tcp)
-        self.sock.send(sendMsg)
+        send_msg = pack('>Hfffffff', command, *tcp)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>H', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>H', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed  
@@ -180,11 +180,11 @@ class ABBClient:
         work_object[:3] *= self._scale_linear
         
         command = 5
-        sendMsg = pack('>Hfffffff', command, *work_object)
-        self.sock.send(sendMsg)
+        send_msg = pack('>Hfffffff', command, *work_object)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>H', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>H', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed       
@@ -197,11 +197,11 @@ class ABBClient:
         angular_speed *= self._scale_angle
 
         command = 6
-        sendMsg = pack('>Hff', command, linear_speed, angular_speed)
-        self.sock.send(sendMsg)
+        send_msg = pack('>Hff', command, linear_speed, angular_speed)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>H', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>H', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed     
@@ -251,11 +251,11 @@ class ABBClient:
         zone[2] *= self._scale_angle
 
         command = 7
-        sendMsg = pack('>HHfff', command, int(point_motion), *zone)
-        self.sock.send(sendMsg)
+        send_msg = pack('>HHfff', command, int(point_motion), *zone)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>H', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>H', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed  
@@ -268,11 +268,11 @@ class ABBClient:
         measured in degrees (default)
         """       
         command = 8
-        sendMsg = pack('>H', command)
-        self.sock.send(sendMsg)
+        send_msg = pack('>H', command)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>Hffffff', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>Hffffff', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed  
@@ -288,11 +288,11 @@ class ABBClient:
         qw, qx, qy, qz specify a quaternion rotation
         """
         command = 9
-        sendMsg = pack('>H', command)
-        self.sock.send(sendMsg)
+        send_msg = pack('>H', command)
+        self.sock.send(send_msg)
         time.sleep(self._delay)
-        receiveMsg = self.sock.recv(4096)
-        retvals = unpack_from('>Hfffffff', receiveMsg)
+        receive_msg = self.sock.recv(4096)
+        retvals = unpack_from('>Hfffffff', receive_msg)
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed  
@@ -304,8 +304,8 @@ class ABBClient:
         """Releases any resources held by the controller (e.g., sockets).
         """
         command = 99
-        sendMsg = pack('>H', command)
-        self.sock.send(sendMsg)
+        send_msg = pack('>H', command)
+        self.sock.send(send_msg)
         time.sleep(self._delay)        
         self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
