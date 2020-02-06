@@ -16,7 +16,7 @@ def main():
     base_frame = (0, 0, 0, 0, 0, 0)
     work_frame = (400, 0, 300, 180, 0, 180)     # base frame: x->front, y->right, z->up
     
-    with AsyncRobot(SyncRobot(ABBController(ip='164.11.72.156', port=5000))) as robot:
+    with AsyncRobot(SyncRobot(ABBController(ip='164.11.73.64', port=5000))) as robot:
     # For testing in RobotStudio simulator
 #    with AsyncRobot(SyncRobot(ABBController(ip='127.0.0.1', port=5000))) as robot:
         # Set TCP, linear speed,  angular speed and coordinate frame
@@ -41,8 +41,10 @@ def main():
         # Increase and decrease all joint angles
         print("Increasing and decreasing all joint angles ...")
         robot.move_joints(robot.joint_angles + (5, 5, 5, 5, 5, 5))
+        print("Target joint angles after increase: {}".format(robot.target_joint_angles))
         print("Joint angles after increase: {}".format(robot.joint_angles))
         robot.move_joints(robot.joint_angles - (5, 5, 5, 5, 5, 5))
+        print("Target joint angles after decrease: {}".format(robot.target_joint_angles))
         print("Joint angles after decrease: {}".format(robot.joint_angles))
         
         # Move backward and forward
@@ -85,10 +87,11 @@ def main():
         # Move to offset pose then tap down and up in sensor frame
         print("Moving to 20 mm/deg offset in all pose dimensions ...")         
         robot.move_linear((20, 20, 20, 20, 20, 20))
+        print("Target pose after offset move: {}".format(robot.target_pose))
         print("Pose after offset move: {}".format(robot.pose))
         print("Tapping down and up ...")
         robot.coord_frame = base_frame
-        robot.coord_frame = robot.pose
+        robot.coord_frame = robot.target_pose
         robot.move_linear((0, 0, 20, 0, 0, 0))
         robot.move_linear((0, 0, 0, 0, 0, 0))
         robot.coord_frame = work_frame
@@ -107,6 +110,7 @@ def main():
         robot.move_linear((100, 100, 100, 0, 0, 0)) 
         print("Moving to origin of work frame ...")
         robot.move_linear((0, 0, 0, 0, 0, 0))
+        print("Final target pose in work frame: {}".format(robot.target_pose))
         print("Final pose in work frame: {}".format(robot.pose))
         
         # Pause before commencing asynchronous tests
@@ -119,10 +123,12 @@ def main():
         robot.async_move_joints(robot.joint_angles + (5, 5, 5, 5, 5, 5))
         print("Getting on with something else while command completes ...")
         robot.async_result()
+        print("Target joint angles after increase: {}".format(robot.target_joint_angles))
         print("Joint angles after increase: {}".format(robot.joint_angles))
         robot.async_move_joints(robot.joint_angles - (5, 5, 5, 5, 5, 5))
         print("Getting on with something else while command completes ...")      
         robot.async_result()
+        print("Target joint angles after decrease: {}".format(robot.target_joint_angles))
         print("Joint angles after decrease: {}".format(robot.joint_angles))
 
         # Move backward and forward (async)
@@ -195,10 +201,11 @@ def main():
         robot.async_move_linear((20, 20, 20, 20, 20, 20))
         print("Getting on with something else while command completes ...")
         robot.async_result()
+        print("Target pose after offset move: {}".format(robot.target_pose))
         print("Pose after offset move: {}".format(robot.pose))
         print("Tapping down and up (async) ...")
         robot.coord_frame = base_frame
-        robot.coord_frame = robot.pose
+        robot.coord_frame = robot.target_pose
         robot.async_move_linear((0, 0, 20, 0, 0, 0))
         print("Getting on with something else while command completes ...")
         robot.async_result()
@@ -231,7 +238,8 @@ def main():
         robot.async_move_linear((0, 0, 0, 0, 0, 0))
         print("Getting on with something else while command completes ...")
         robot.async_result()
-        
+
+        print("Final target pose in work frame: {}".format(robot.target_pose))
         print("Final pose in work frame: {}".format(robot.pose))
 
 

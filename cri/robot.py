@@ -31,6 +31,14 @@ class AsyncNotBusy(RuntimeError):
     pass    
 
 
+class TargetJointAnglesNotSet(RuntimeError):
+    pass
+
+
+class TargetPoseNotSet(RuntimeError):
+    pass
+
+
 def check_joint_angles(joint_angles):
     if len(joint_angles) != 6:
         raise InvalidJointAngles
@@ -202,8 +210,30 @@ class Robot(ABC):
 
     @property
     @abstractmethod
+    def target_joint_angles(self):
+        """ Returns the target robot joint angles.
+
+        joint_angles = (j0, j1, j2, j3, j4, j5)
+        j0, j1, j2, j3, j4, j5 specify the joint angles (degrees), numbered
+        from base to end effector
+        """
+        pass
+
+    @property
+    @abstractmethod
     def pose(self):
         """Returns the TCP pose in the reference coordinate frame.
+
+        pose = (x, y, z, alpha, beta, gamma)
+        x, y, z specify a Euclidean position (mm)
+        alpha, beta, gamma specify an euler rotation (degrees)
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def target_pose(self):
+        """Returns the target TCP pose in the reference coordinate frame.
 
         pose = (x, y, z, alpha, beta, gamma)
         x, y, z specify a Euclidean position (mm)
@@ -264,6 +294,8 @@ class SyncRobot(Robot):
             self.linear_speed = 20                  # mm/s
             self.angular_speed = 20                 # deg/s
             self.blend_radius = 0                   # mm
+            self._target_joint_angles = None
+            self._target_base_pose_q = None
         except:
             self.controller.close()
             raise
@@ -356,6 +388,14 @@ class SyncRobot(Robot):
         return self.controller.joint_angles
 
     @property
+    def target_joint_angles(self):
+        """ Returns the target robot joint angles.
+        """
+        if self._target_joint_angles is None:
+            raise TargetJointAnglesNotSet
+        return self._target_joint_angles
+
+    @property
     def pose(self):
         """Returns the TCP pose in the reference coordinate frame.
         """
@@ -365,22 +405,34 @@ class SyncRobot(Robot):
         else:
             return quat2euler(transform(pose_q, self._coord_frame_q), self._axes)
 
+    @property
+    def target_pose(self):
+        """Returns the target TCP pose in the reference coordinate frame.
+        """
+        if self._target_base_pose_q is None:
+            raise TargetPoseNotSet
+        if self._is_base_frame:
+            return quat2euler(self._target_base_pose_q, self._axes)
+        else:
+            return quat2euler(transform(self._target_base_pose_q, self._coord_frame_q), self._axes)
+
     def move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
         """
         check_joint_angles(joint_angles)
-        self.controller.move_joints(joint_angles)
+        self._target_joint_angles = joint_angles
+        self.controller.move_joints(self._target_joint_angles)
     
     def move_linear(self, pose):
         """Executes a linear/cartesian move from the current TCP pose to the
         specified pose in the reference coordinate frame.
         """
         check_pose(pose)
-        pose_q = euler2quat(pose, self._axes)
         if self._is_base_frame:
-            self.controller.move_linear(pose_q)
+            self._target_base_pose_q = euler2quat(pose, self._axes)
         else:
-            self.controller.move_linear(inv_transform(pose_q, self._coord_frame_q))
+            self._target_base_pose_q = inv_transform(euler2quat(pose, self._axes), self._coord_frame_q)
+        self.controller.move_linear(self._target_base_pose_q)
 
     def move_circular(self, via_pose, end_pose):
         """Executes a movement in a circular path from the current TCP pose,
@@ -388,13 +440,13 @@ class SyncRobot(Robot):
         """
         check_pose(via_pose)
         check_pose(end_pose)
-        via_pose_q = euler2quat(via_pose, self._axes)
-        end_pose_q = euler2quat(end_pose, self._axes)
         if self._is_base_frame:
-            self.controller.move_circular(via_pose_q, end_pose_q)
+            _via_base_pose_q = euler2quat(via_pose, self._axes)
+            self._target_base_pose_q = euler2quat(end_pose, self._axes)
         else:
-            self.controller.move_circular(inv_transform(via_pose_q, self._coord_frame_q),
-                                     inv_transform(end_pose_q, self._coord_frame_q))
+            _via_base_pose_q = inv_transform(euler2quat(via_pose, self._axes), self._coord_frame_q)
+            self._target_base_pose_q = inv_transform(euler2quat(end_pose, self._axes), self._coord_frame_q)
+        self.controller.move_circular(_via_base_pose_q, self._target_base_pose_q)
    
     def close(self):
         """Releases any resources held by the robot (e.g., sockets).
@@ -474,8 +526,16 @@ class AsyncRobot(Robot):
         return self.sync_robot.joint_angles
 
     @property
+    def target_joint_angles(self):
+        return self.sync_robot.target_joint_angles
+
+    @property
     def pose(self):
         return self.sync_robot.pose
+
+    @property
+    def target_pose(self):
+        return self.sync_robot.target_pose
 
     def move_joints(self, joint_angles):
         self.sync_robot.move_joints(joint_angles)
