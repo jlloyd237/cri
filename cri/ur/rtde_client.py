@@ -110,7 +110,7 @@ class RTDEClient:
         j0, j1, j2, j3, j4, j5 are numbered from base to end effector and are
         measured in degrees
         """
-        joint_angles = np.asarray(joint_angles, dtype=np.float64).ravel()
+        joint_angles = np.array(joint_angles, dtype=np.float64).ravel()
         joint_angles *= self._scale_angle
         
         self._command.input_int_register_0 = 1
@@ -133,7 +133,7 @@ class RTDEClient:
         x, y, z specify a Euclidean position (mm)
         ax, ay, az specify an axis-angle rotation
         """
-        pose = np.asarray(pose, dtype=np.float64).ravel()
+        pose = np.array(pose, dtype=np.float64).ravel()
         pose[:3] *= self._scale_linear
         
         self._command.input_int_register_0 = 2
@@ -156,9 +156,9 @@ class RTDEClient:
         x, y, z specify a Euclidean position (mm)
         ax, ay, az specify an axis-angle rotation
         """        
-        via_pose = np.asarray(via_pose, dtype=np.float64).ravel()
+        via_pose = np.array(via_pose, dtype=np.float64).ravel()
         via_pose[:3] *= self._scale_linear
-        end_pose = np.asarray(end_pose, dtype=np.float64).ravel()
+        end_pose = np.array(end_pose, dtype=np.float64).ravel()
         end_pose[:3] *= self._scale_linear        
         
         self._command.input_int_register_0 = 3
@@ -190,7 +190,7 @@ class RTDEClient:
         x, y, z specify a Euclidean position (mm)
         ax, ay, az specify an axis-angle rotation
         """
-        tcp = np.asarray(tcp, dtype=np.float64).ravel()
+        tcp = np.array(tcp, dtype=np.float64).ravel()
         tcp[:3] *= self._scale_linear
         
         self._command.input_int_register_0 = 4
@@ -263,7 +263,7 @@ class RTDEClient:
         measured in degrees
         """
         self._state = self._con.receive()
-        joint_angles = np.asarray(self._state.actual_q, dtype=np.float64)
+        joint_angles = np.array(self._state.actual_q, dtype=np.float64)
         joint_angles /= self._scale_angle
         return joint_angles
 
@@ -275,7 +275,7 @@ class RTDEClient:
         ax, ay, az specify an axis-angle rotation
         """
         self._state = self._con.receive()
-        pose = np.asarray(self._state.actual_TCP_pose, dtype=np.float64)
+        pose = np.array(self._state.actual_TCP_pose, dtype=np.float64)
         pose[:3] /= self._scale_linear      
         return pose
 

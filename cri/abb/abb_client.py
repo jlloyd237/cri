@@ -85,7 +85,7 @@ class ABBClient:
         j0, j1, j2, j3, j4, j5 are numbered from base to end effector and are
         measured in degrees (default)
         """
-        joint_angles = np.asarray(joint_angles, dtype=np.float32).ravel()
+        joint_angles = np.array(joint_angles, dtype=np.float32).ravel()
         joint_angles *= self._scale_angle
 
         command = 1
@@ -106,7 +106,7 @@ class ABBClient:
         x, y, z specify a Euclidean position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
-        pose = np.asarray(pose, dtype=np.float32).ravel()
+        pose = np.array(pose, dtype=np.float32).ravel()
         pose[:3] *= self._scale_linear
         
         command = 2
@@ -127,9 +127,9 @@ class ABBClient:
         x, y, z specify a Euclidean position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """        
-        via_pose = np.asarray(via_pose, dtype=np.float32).ravel()
+        via_pose = np.array(via_pose, dtype=np.float32).ravel()
         via_pose[:3] *= self._scale_linear
-        end_pose = np.asarray(end_pose, dtype=np.float32).ravel()
+        end_pose = np.array(end_pose, dtype=np.float32).ravel()
         end_pose[:3] *= self._scale_linear        
         
         command = 3
@@ -153,7 +153,7 @@ class ABBClient:
         x, y, z specify a Euclidean position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
-        tcp = np.asarray(tcp, dtype=np.float32).ravel()
+        tcp = np.array(tcp, dtype=np.float32).ravel()
         tcp[:3] *= self._scale_linear
         
         command = 4
@@ -176,7 +176,7 @@ class ABBClient:
         x, y, z specify a Euclidean position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
-        work_object = np.asarray(work_object, dtype=np.float32).ravel()
+        work_object = np.array(work_object, dtype=np.float32).ravel()
         work_object[:3] *= self._scale_linear
         
         command = 5
@@ -240,7 +240,7 @@ class ABBClient:
         if point_motion: 
             zone = np.array((0, 0, 0))
         elif manual_zone is not None and len(manual_zone) == 3:
-            zone = np.asarray(manual_zone, dtype=np.float32).ravel()
+            zone = np.array(manual_zone, dtype=np.float32).ravel()
         elif zone_key in zone_dict.keys(): 
             zone = np.array(zone_dict[zone_key])
         else:
@@ -276,7 +276,7 @@ class ABBClient:
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed  
-        joint_angles = np.asarray(retvals[1:], dtype=np.float64)
+        joint_angles = np.array(retvals[1:], dtype=np.float64)
         joint_angles /= self._scale_angle
         return joint_angles
     
@@ -296,7 +296,7 @@ class ABBClient:
         ack = retvals[0]
         if ack != ABBClient.SERVER_OK:
             raise ABBClient.CommandFailed  
-        pose = np.asarray(retvals[1:], dtype=np.float64)
+        pose = np.array(retvals[1:], dtype=np.float64)
         pose[:3] /= self._scale_linear      
         return pose
         
