@@ -420,7 +420,7 @@ class SyncRobot(Robot):
         """Executes an immediate move to the specified joint angles.
         """
         check_joint_angles(joint_angles)
-        self._target_joint_angles = joint_angles
+        self._target_joint_angles = np.array(joint_angles)
         self.controller.move_joints(self._target_joint_angles)
     
     def move_linear(self, pose):
