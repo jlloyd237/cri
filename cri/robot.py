@@ -40,7 +40,7 @@ class TargetPoseNotSet(RuntimeError):
 
 
 def check_joint_angles(joint_angles):
-    if len(joint_angles) != 6:
+    if not (6 <= len(joint_angles) <= 7):
         raise InvalidJointAngles
 
 

@@ -15,12 +15,12 @@ from PyQt5.QtWidgets import QApplication, QDialog, QStyleFactory, QToolTip, \
 from PyQt5.QtGui import QIcon, QFont
 
 from cri.robot import SyncRobot
-from cri.controller import ABBController, RTDEController
+from cri.controller import ABBController, RTDEController, FrankxController
 
 # Uncomment for testing/debugging
-#from dummy_robot import DummySyncRobot as SyncRobot
-#from dummy_robot import DummyABBController as ABBController, \
-#    DummyRTDEController as RTDEController
+# from dummy_robot import DummySyncRobot as SyncRobot
+# from dummy_robot import DummyABBController as ABBController, \
+#    DummyRTDEController as RTDEController, DummyFrankxController as FrankxController
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class JoggerDialog(QDialog):
         POSE = 1
         JOINTS = 2
         
-    ROBOTS = ("abb", "ur")
+    ROBOTS = ("abb", "ur", "franka")
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -93,7 +93,7 @@ class JoggerDialog(QDialog):
         self.robotComboBox = QComboBox()
         self.robotComboBox.addItems(self.ROBOTS)
         self.robotComboBox.setCurrentText("abb")
-        self.robotComboBox.setFixedWidth(60)
+        self.robotComboBox.setFixedWidth(70)
         self.robotComboBox.setFixedHeight(20)
         self.robotComboBox.setEnabled(True)
         
@@ -141,7 +141,8 @@ class JoggerDialog(QDialog):
         topLayout.addWidget(self.connectPushButton, 0, 6)        
         topLayout.addWidget(self.disconnectPushButton, 1, 6)
 
-        self.createTabWidget()
+        robot = self.robotComboBox.currentText()
+        self.createTabWidget(robot)
         self.tabWidget.setEnabled(False)
 
         mainLayout = QVBoxLayout()
@@ -165,12 +166,11 @@ class JoggerDialog(QDialog):
         self.coordFrameEditWidget.editingFinished.connect(self.onCoordFrameChanged)
        
         self.poseControlWidget.valueChanged.connect(self.onPoseChanged)
-        self.jointControlWidget.valueChanged.connect(self.onJointAnglesChanged)
         
         self.tabWidget.currentChanged.connect(self.onTabChanged) 
 
 
-    def createTabWidget(self):
+    def createTabWidget(self, robot):
         self.tabWidget = QTabWidget()
         self.tabWidget.setSizePolicy(QSizePolicy.Preferred,
                                          QSizePolicy.Ignored)
@@ -194,17 +194,7 @@ class JoggerDialog(QDialog):
         poseTabLayout.addWidget(self.poseControlWidget)        
         poseTab.setLayout(poseTabLayout)
 
-        jointsTab = QWidget()         
-        self.jointControlWidget = MultiSliderControlWidget(
-            names=("base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3"),
-            units=("°",) * 6,
-            ranges=((-360, 360),) * 6,
-            values=(0,) * 6,
-            )
-        jointsTabLayout = QHBoxLayout()
-        jointsTabLayout.setContentsMargins(5, 5, 5, 5)
-        jointsTabLayout.addWidget(self.jointControlWidget)       
-        jointsTab.setLayout(jointsTabLayout)
+        jointsTab = QWidget()   # widget content depends on robot type
 
         self.tabWidget.addTab(settingsTab, "&Settings" )
         self.tabWidget.addTab(poseTab, "&Pose")
@@ -337,7 +327,12 @@ class JoggerDialog(QDialog):
     def onRobotChanged(self, value):
         logger.debug("JoggerDialog.onRobotChanged(value={})".format(
                 value))
-        if value == "ur":
+        if value == "franka":
+            # No need to specify port for Franka arm
+            self.portEditBox.setText("")
+            self.portEditBox.setEnabled(False)
+        elif value == "ur":
+            # UR controller always listens on port 30004
             self.portEditBox.setText(str(30004))
             self.portEditBox.setEnabled(False)
         else:
@@ -367,39 +362,81 @@ class JoggerDialog(QDialog):
         port = self.portEditBox.text()
         logger.debug("JoggerDialog.onConnect(robot={}, ip={}, port={})".format(
                 robot, ip, port))
-             
-        if isValidIPAddress(ip) and isValidPortNumber(port):
-            try:
-                if robot == "abb":
-                    port = int(port)
-                    self.robot = SyncRobot(ABBController(ip, port))
-                elif robot == "ur":
-                    self.robot = SyncRobot(RTDEController(ip))
-            except:
-                msg = QErrorMessage(self)
-                msg.showMessage("Failed to connect to server")
-                msg.exec_()
-            else:
-                self.robotComboBox.setEnabled(False)
-                self.ipEditBox.setEnabled(False)
-                self.portEditBox.setEnabled(False)
-                self.connectPushButton.setEnabled(False)
-                self.disconnectPushButton.setEnabled(True)
 
-                self.axesComboBox.setCurrentText(self.robot.axes)
-                self.linearSpeedEditBox.setText("{:.1f}".format(self.robot.linear_speed))
-                self.angularSpeedEditBox.setText("{:.1f}".format(self.robot.angular_speed))
-                self.blendRadiusEditBox.setText("{:.1f}".format(self.robot.blend_radius))               
-                self.tcpEditWidget.value = self.robot.tcp
-                self.coordFrameEditWidget.value = self.robot.coord_frame
-
-                self.tabWidget.setCurrentIndex(self.TabIndex.SETTINGS)
-                self.tabWidget.setEnabled(True)
-        else:
+        if robot in ("abb", 'ur') and (not isValidIPAddress(ip) or not isValidPortNumber(port)):
             msg = QErrorMessage(self)
             msg.showMessage("Please specify valid IP address and port number")
             msg.exec_()
             self.sender().setFocus()
+            return
+
+        if robot == "franka" and not isValidIPAddress(ip):   # no need to specify port for Franka arm
+            msg = QErrorMessage(self)
+            msg.showMessage("Please specify valid IP address")
+            msg.exec_()
+            self.sender().setFocus()
+            return
+
+        try:
+            if robot == "abb":
+                port = int(port)
+                self.robot = SyncRobot(ABBController(ip, port))
+            elif robot == "ur":
+                self.robot = SyncRobot(RTDEController(ip))
+            elif robot == "franka":
+                self.robot = SyncRobot(FrankxController(ip))
+        except:
+            msg = QErrorMessage(self)
+            msg.showMessage("Failed to connect to server")
+            msg.exec_()
+        else:
+            self.robotComboBox.setEnabled(False)
+            self.ipEditBox.setEnabled(False)
+            self.portEditBox.setEnabled(False)
+            self.connectPushButton.setEnabled(False)
+            self.disconnectPushButton.setEnabled(True)
+
+            self.axesComboBox.setCurrentText(self.robot.axes)
+
+            if robot == "franka":
+                # Disable settings that don't apply to Franka arm
+                self.linearSpeedEditBox.setText("n/a")
+                self.angularSpeedEditBox.setText("n/a")
+                self.blendRadiusEditBox.setText("n/a")
+                self.linearSpeedEditBox.setEnabled(False)
+                self.blendRadiusEditBox.setEnabled(False)
+                self.angularSpeedEditBox.setEnabled(False)
+            else:
+                self.linearSpeedEditBox.setText("{:.1f}".format(self.robot.linear_speed))
+                self.angularSpeedEditBox.setText("{:.1f}".format(self.robot.angular_speed))
+                self.blendRadiusEditBox.setText("{:.1f}".format(self.robot.blend_radius))
+                self.linearSpeedEditBox.setEnabled(True)
+                self.blendRadiusEditBox.setEnabled(True)
+                self.angularSpeedEditBox.setEnabled(True)
+
+            self.tcpEditWidget.value = self.robot.tcp
+            self.coordFrameEditWidget.value = self.robot.coord_frame
+
+            # Set up joint angles tab - need to do this dynamically now because layout depends on
+            # whether ABB/UR5 robot is selected (6 joints), or Franka robot is selected (7 joints)
+            jointsTab = QWidget()
+            n_joints = 7 if robot == "franka" else 6
+            self.jointControlWidget = MultiSliderControlWidget(
+                names=["joint {}".format(i+1) for i in range(n_joints)],
+                units=("°",) * n_joints,
+                ranges=((-360, 360),) * n_joints,
+                values=(0,) * n_joints,
+            )
+            self.jointControlWidget.valueChanged.connect(self.onJointAnglesChanged)
+            jointsTabLayout = QHBoxLayout()
+            jointsTabLayout.setContentsMargins(5, 5, 5, 5)
+            jointsTabLayout.addWidget(self.jointControlWidget)
+            jointsTab.setLayout(jointsTabLayout)
+            self.tabWidget.removeTab(2)
+            self.tabWidget.addTab(jointsTab, "&Joints")
+
+            self.tabWidget.setCurrentIndex(self.TabIndex.SETTINGS)
+            self.tabWidget.setEnabled(True)
 
     def onDisconnect(self):
         logger.debug("JoggerDialog.onDisconnect")         
@@ -408,7 +445,7 @@ class JoggerDialog(QDialog):
         robot = self.robotComboBox.currentText()
         if robot == "abb":
             self.portEditBox.setEnabled(True)
-        elif robot == "ur":
+        elif robot in ("ur", "franka"):
             self.portEditBox.setEnabled(False)
         self.connectPushButton.setEnabled(True)
         self.disconnectPushButton.setEnabled(False)

@@ -36,6 +36,19 @@ class DummyRTDEController:
         return self.__repr__()
 
 
+class DummyFrankxController:
+    """Dummy Frankx controller class.
+    """
+    def __init__(self, ip='172.16.0.2'):
+        logger.debug("DummyFrankxController.__init__(ip={})".format(ip))
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+    def __str__(self):
+        return self.__repr__()
+
+
 class DummySyncRobot:
     """Dummy synchronous robot class.
     """
@@ -46,7 +59,8 @@ class DummySyncRobot:
                   "rzxy", "ryxy", "ryxz", "rzxz", "rxyz", "rzyz",
                   )
     
-    def __init__(self, ctrl):       
+    def __init__(self, ctrl):
+        self.ctrl = ctrl
         logger.debug("DummySyncRobot.__init__(ctrl={})".format(ctrl))
 
     def __repr__(self):      
@@ -119,7 +133,12 @@ class DummySyncRobot:
 
     @property
     def joint_angles(self):
-        return np.array((0.12345, 10.0, 20.0, 30.0, 40.0, 50.0))
+        if isinstance(self.ctrl, DummyFrankxController):
+            # Franka arm has 7 joints
+            return np.array((0.12345, 10.0, 20.0, 30.0, 40.0, 50.0, 100.0))
+        else:
+            # ABB and UR5 arms have 6 joints
+            return np.array((0.12345, 10.0, 20.0, 30.0, 40.0, 50.0))
 
     @property
     def pose(self):
@@ -142,6 +161,7 @@ class DummySyncRobot:
 
 
 # Uncomment for offline debugging
-#SyncRobot = DummySyncRobot
-#ABBController = DummyABBController
-#RTDEController = DummyRTDEController
+# SyncRobot = DummySyncRobot
+# ABBController = DummyABBController
+# RTDEController = DummyRTDEController
+# FrankxController = DummyFrankxController

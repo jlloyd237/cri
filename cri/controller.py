@@ -3,11 +3,20 @@
 interface to various robot arms.
 """
 
+import warnings
 from abc import ABC, abstractmethod
 
-from cri.transforms import quat2axangle, axangle2quat
+import numpy as np
+
+from cri.transforms import quat2axangle, axangle2quat, quat2mat, mat2quat, \
+    mat2euler, quat2euler, euler2quat, transform, inv_transform
 from cri.abb.abb_client import ABBClient
 from cri.ur.rtde_client import RTDEClient
+
+try:
+    import frankx
+except ImportError:
+    warnings.warn("Failed to import frankx library: frankx controller not available")
 
 
 class RobotController(ABC):
@@ -113,8 +122,8 @@ class RobotController(ABC):
     def joint_angles(self):
         """Returns the robot joint angles.
         
-        joint angles = (j0, j1, j2, j3, j4, j5)
-        j0, j1, j2, j3, j4, j5 are numbered from base to end effector and are
+        joint angles = (j0, j1, j2, j3, j4, j5, [j6])
+        j0, j1, j2, j3, j4, j5, [j6] are numbered from base to end effector and are
         measured in degrees
         """
         pass
@@ -448,3 +457,314 @@ class RTDEController(RobotController):
         """Releases any resources held by the controller (e.g., sockets).
         """
         return self._client.close()
+
+
+class FrankxController(RobotController):
+    """Frankx controller class implements common interface to robot arms.
+
+    Poses and coordinate frames are specified using 3D Euclidean positions
+    and quaternion rotations.  This format makes it easy to perform
+    coordinate transformations.
+
+    An offset frame is used to make sure that the poses sent to the
+    underlying trajectory generator are in a continuous region of Euler
+    space.
+    """
+
+    MAX_MOVE_ATTEMPTS = 3
+
+    def __init__(self, ip='172.16.0.2'):
+        self._ip = ip
+        self._client = frankx.Robot(ip)
+        self._client.recover_from_errors()
+        self._client.set_default_behavior()
+
+        self._tcp = euler2quat((0, 0, 0, 0, 0, 0))
+        self._offset = euler2quat((0, 0, 0, 180, 0, 180))
+
+        self.set_units('millimeters', 'degrees')
+        self._set_EE()
+
+        self.rel_velocity = 0.4
+        self.rel_accel = 0.03
+        self.rel_jerk = 0.02
+
+    def _set_EE(self):
+        ne_t_ee = inv_transform(self._offset, self._tcp)
+        ne_t_ee[:3] *= self._scale_linear
+        self._client.set_EE(quat2mat(ne_t_ee).flatten(order='F'))
+
+    @property
+    def info(self):
+        """Returns a unique robot identifier string.
+        """
+        # return "ip: {}, info: {}".format(self._ip, self._client.server_version())
+        return "ip: {}".format(self._ip)
+
+    @property
+    def tcp(self):
+        """Returns the tool center point (TCP) of the robot.
+        """
+        return self._tcp
+
+    @tcp.setter
+    def tcp(self, tcp):
+        """Sets the tool center point (TCP) of the robot.
+        """
+        self._tcp = np.array(tcp, dtype=np.float64).ravel()
+        self._set_EE()
+
+    @property
+    def offset(self):
+        """Returns the tool center point (TCP) offset of the robot
+        """
+        return self._offset
+
+    @offset.setter
+    def offset(self, offset):
+        """Sets the tool center point (TCP) offset of the robot
+        """
+        self._offset = np.array(offset, dtype=np.float64).ravel()
+        self._set_EE()
+
+    @property
+    def max_trans_velocity(self):
+        """Returns the maximum translational velocity of the robot TCP (mm/s).
+        """
+        return self._client.max_translation_velocity / self._scale_linear
+
+    @property
+    def max_rot_velocity(self):
+        """Returns the maximum rotational velocity of the robot TCP (deg/s).
+        """
+        return self._client.max_rotation_velocity / self._scale_angle
+
+    @property
+    def max_elbow_velocity(self):
+        """Returns the maximum elbow velocity of the robot (deg/s).
+        """
+        return self._client.max_elbow_velocity / self._scale_angle
+
+    @property
+    def max_trans_accel(self):
+        """Returns the maximum translational acceleration of the robot TCP (mm/s/s).
+        """
+        return self._client.max_translation_acceleration / self._scale_linear
+
+    @property
+    def max_rot_accel(self):
+        """Returns the maximum rotational acceleration of the robot TCP (deg/s/s).
+        """
+        return self._client.max_rotation_acceleration / self._scale_angle
+
+    @property
+    def max_elbow_accel(self):
+        """Returns the maximum elbow acceleration of the robot (deg/s/s).
+        """
+        return self._client.max_elbow_acceleration / self._scale_angle
+
+    @property
+    def max_trans_jerk(self):
+        """Returns the maximum translational jerk of the robot TCP (mm/s/s/s).
+        """
+        return self._client.max_translation_jerk / self._scale_linear
+
+    @property
+    def max_rot_jerk(self):
+        """Returns the maximum rotational jerk of the robot TCP (deg/s/s/s).
+        """
+        return self._client.max_rotation_jerk / self._scale_angle
+
+    @property
+    def max_elbow_jerk(self):
+        """Returns the maximum elbow jerk of the robot TCP (deg/s/s/s).
+        """
+        return self._client.max_elbow_jerk / self._scale_linear
+
+    @property
+    def rel_velocity(self):
+        """Returns the relative velocity of the robot
+        """
+        return self._rel_velocity
+
+    @rel_velocity.setter
+    def rel_velocity(self, rel_velocity):
+        """Sets the velocity to rel_velocity % of the maximum (0 < rel_velocity <= 1)
+        """
+        self._rel_velocity = rel_velocity
+        self._client.velocity_rel = rel_velocity
+
+    @property
+    def rel_accel(self):
+        """Returns the relative acceleration of the robot
+        """
+        return self._rel_accel
+
+    @rel_accel.setter
+    def rel_accel(self, rel_accel):
+        """Sets the acceleraton to rel_accel % of the maximum (0 < rel_accel <= 1)
+        """
+        self._rel_accel = rel_accel
+        self._client.acceleration_rel = rel_accel
+
+    @property
+    def rel_jerk(self):
+        """Returns the relative jerk of the robot
+        """
+        return self._rel_jerk
+
+    @rel_jerk.setter
+    def rel_jerk(self, rel_jerk):
+        """Sets the jerk to rel_jerk % of the maximum (0 < rel_jerk <= 1)
+        """
+        self._rel_jerk = rel_jerk
+        self._client.jerk_rel = rel_jerk
+
+    @property
+    def linear_accel(self):
+        """Returns the linear acceleration of the robot TCP (mm/s/s).
+        """
+        warnings.warn("linear_accel property not implemented in frankx")
+        return None
+
+    @linear_accel.setter
+    def linear_accel(self, accel):
+        """Sets the linear acceleration of the robot TCP (mm/s/s).
+        """
+        warnings.warn("linear_accel property not implemented in frankx")
+
+    @property
+    def linear_speed(self):
+        """Returns the linear speed of the robot TCP (mm/s).
+        """
+        warnings.warn("linear_speed property not implemented in frankx")
+        return None
+
+    @linear_speed.setter
+    def linear_speed(self, speed):
+        """Sets the linear speed of the robot TCP (mm/s).
+        """
+        warnings.warn("linear_speed property not implemented in frankx")
+
+    @property
+    def angular_accel(self):
+        """Returns the angular acceleration of the robot TCP (deg/s/s).
+        """
+        warnings.warn("angular_accel property not implemented in frankx")
+        return None
+
+    @angular_accel.setter
+    def angular_accel(self, accel):
+        """Sets the angular acceleration of the robot TCP (deg/s/s).
+        """
+        self._client.set_angular_accel(accel)
+        warnings.warn("angular_accel property not implemented in frankx")
+
+    @property
+    def angular_speed(self):
+        """Returns the angular speed of the robot TCP (deg/s).
+        """
+        warnings.warn("angular_speed property not implemented in frankx")
+        return None
+
+    @angular_speed.setter
+    def angular_speed(self, speed):
+        """Sets the angular speed of the robot TCP (deg/s).
+        """
+        warnings.warn("angular_speed property not implemented in frankx")
+
+    @property
+    def blend_radius(self):
+        """Returns the robot blend radius (mm).
+        """
+        warnings.warn("blend_radius property not implemented in frankx")
+        return None
+
+    @blend_radius.setter
+    def blend_radius(self, blend_radius):
+        """Sets the robot blend radius (mm).
+        """
+        warnings.warn("blend_radius property not implemented in frankx")
+
+    def set_units(self, linear, angular):
+        """Sets linear and angular units.
+        """
+        units_l = {'millimeters' : 0.001,
+                   'meters' : 1.0,
+                   'inches' : 0.0254,
+                   }
+        units_a = {'degrees' : 0.0174533,
+                   'radians' : 1.0,
+                   }
+        self._scale_linear = units_l[linear]
+        self._scale_angle  = units_a[angular]
+
+    @property
+    def joint_angles(self):
+        """Returns the robot joint angles.
+        """
+        state = self._client.read_once()
+        joint_angles = np.array(state.q, dtype=np.float64)
+        joint_angles /= self._scale_angle
+        return joint_angles
+
+    @property
+    def pose(self):
+        """Returns the current base frame pose.
+        """
+        state = self._client.read_once()
+        pose = np.array(state.O_T_EE, dtype=np.float64)
+        pose = mat2quat(pose.reshape((4, 4), order='F'))
+        inv_offset = inv_transform(euler2quat((0, 0, 0, 0, 0, 0)), self._offset)
+        pose = inv_transform(inv_offset, pose)
+        pose[:3] /= self._scale_linear
+        return pose
+
+    def move_joints(self, joint_angles):
+        """Executes an immediate move to the specified joint angles.
+        """
+        joint_angles = np.array(joint_angles, dtype=np.float64).ravel()
+        joint_angles *= self._scale_angle
+        motion = frankx.JointMotion(joint_angles)
+        for attempt in range(self.MAX_MOVE_ATTEMPTS):
+            if self._client.move(motion):
+                break
+            if attempt < self.MAX_MOVE_ATTEMPTS - 1:
+                warnings.warn("Move failed - trying again ...")
+            else:
+                warnings.warn("Move failed - aborting")
+            self._client.recover_from_errors()
+
+    def move_linear(self, pose):
+        """Executes a linear/cartesian move from the current base frame pose to
+        the specified pose.
+        """
+        pose = inv_transform(self._offset, pose)
+        pose = quat2euler(pose, axes='rzyx')
+        pose[:3] *= self._scale_linear
+        pose[3:] *= self._scale_angle
+        motion = frankx.LinearMotion(frankx.Affine(pose))
+        for attempt in range(self.MAX_MOVE_ATTEMPTS):
+            if self._client.move(motion):
+                break
+            if attempt < self.MAX_MOVE_ATTEMPTS - 1:
+                warnings.warn("Move failed - trying again ...")
+            else:
+                warnings.warn("Move failed - aborting")
+            self._client.recover_from_errors()
+
+    def move_circular(self, via_pose, end_pose):
+        """Executes a movement in a circular path from the current base frame
+        pose, through via_pose, to end_pose.
+        """
+        raise NotImplementedError
+
+    def recover_from_errors(self):
+        """Recover from errors and reset Franka controller.
+        """
+        self._client.recover_from_errors()
+
+    def close(self):
+        """Recover from errors and reset Franka controller.
+        """
+        self._client.recover_from_errors()
