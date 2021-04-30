@@ -78,6 +78,7 @@ class RTDEClient:
         params_vec_6d_names, params_vec_6d_types = conf.get_recipe('params_vec_6d')          
         params_vec_6d_2_names, params_vec_6d_2_types = conf.get_recipe('params_vec_6d_2') 
         params_1d_names, params_1d_types = conf.get_recipe('params_1d')
+        params_1d_2_names, params_1d_2_types = conf.get_recipe('params_1d_2')
 
         # connect to RTDE interface
         self._con = rtde_proxy.RTDEProxy(hostname=ip, port=port)
@@ -91,6 +92,7 @@ class RTDEClient:
         self._params_vec_6d = self._con.send_input_setup(params_vec_6d_names, params_vec_6d_types)
         self._params_vec_6d_2 = self._con.send_input_setup(params_vec_6d_2_names, params_vec_6d_2_types)        
         self._params_1d = self._con.send_input_setup(params_1d_names, params_1d_types)
+        self._params_1d_2 = self._con.send_input_setup(params_1d_2_names, params_1d_2_types)
       
         # start RTDE interface
         if not self._con.send_start():
@@ -130,8 +132,8 @@ class RTDEClient:
         the specified pose.
         
         pose = (x, y, z, ax, ay, az)
-        x, y, z specify a Euclidean position (mm)
-        ax, ay, az specify an axis-angle rotation
+        x, y, z specify a Cartesian position (mm)
+        ax, ay, az specify an axis-angle rotation (rad)
         """
         pose = np.array(pose, dtype=np.float64).ravel()
         pose[:3] *= self._scale_linear
@@ -153,8 +155,8 @@ class RTDEClient:
         pose, through via_pose, to end_pose.
         
         via_pose, end_pose = (x, y, z, ax, ay, az)
-        x, y, z specify a Euclidean position (mm)
-        ax, ay, az specify an axis-angle rotation
+        x, y, z specify a Cartesian position (mm)
+        ax, ay, az specify an axis-angle rotation (rad)
         """        
         via_pose = np.array(via_pose, dtype=np.float64).ravel()
         via_pose[:3] *= self._scale_linear
@@ -179,6 +181,95 @@ class RTDEClient:
         self._con.send(self._command)
         self._wait_for_command_complete()
 
+    def move_joint_speed(self, joint_speeds, joint_accel, return_time=None):
+        """Accelerate linearly in joint space and continue with constant joint
+        speed. The return time is optional; if provided the function will
+        return after that time, regardless of the target speed has been reached.
+        If the return time is not provided, the function will return when the
+        target speed is reached.
+
+        joint_speeds = (jd0, jd1, jd2, jd3, jd4, jd5)
+        jd0, jd1, jd2, jd3, jd4, jd5 are numbered from base to end effector and are
+        measured in deg/s
+        joint_accel is measured in deg/s/s (of leading axis)
+        return_time is measured in secs before the function returns (optional)
+        """
+        joint_speeds = np.array(joint_speeds, dtype=np.float64).ravel()
+        joint_speeds *= self._scale_angle
+        joint_accel *= self._scale_angle
+        return_time = -1 if return_time is None else return_time
+
+        self._command.input_int_register_0 = 10
+        self._params_vec_6d.input_double_register_0 = joint_speeds[0]
+        self._params_vec_6d.input_double_register_1 = joint_speeds[1]
+        self._params_vec_6d.input_double_register_2 = joint_speeds[2]
+        self._params_vec_6d.input_double_register_3 = joint_speeds[3]
+        self._params_vec_6d.input_double_register_4 = joint_speeds[4]
+        self._params_vec_6d.input_double_register_5 = joint_speeds[5]
+        self._params_1d_2.input_double_register_19 = joint_accel
+        self._params_1d_2.input_double_register_20 = return_time
+
+        self._con.send(self._params_vec_6d)
+        self._con.send(self._params_1d_2)
+        self._con.send(self._command)
+        self._wait_for_command_complete()
+
+    def move_linear_speed(self, linear_speed, linear_accel, return_time=None):
+        """Accelerate linearly in Cartesian space and continue with constant tool
+        speed. The return time is optional; if provided the function will return after
+        that time, regardless of the target speed has been reached. If the return time
+        is not provided, the function will return when the target speed is reached
+
+        linear speed = (xd, yd, zd, axd, ayd, azd)
+        xd, yd, zd specify a translational velocity (mm/s)
+        axd, ayd, azd specify an axis-angle rotational velocity (rad/s)
+        linear_accel is measured in mm/s/s
+        return_time is measured in secs before the function returns (optional)
+        """
+        linear_speed = np.array(linear_speed, dtype=np.float64).ravel()
+        linear_speed[:3] *= self._scale_linear
+        linear_accel *= self._scale_linear
+        return_time = -1 if return_time is None else return_time
+
+        self._command.input_int_register_0 = 11
+        self._params_vec_6d.input_double_register_0 = linear_speed[0]
+        self._params_vec_6d.input_double_register_1 = linear_speed[1]
+        self._params_vec_6d.input_double_register_2 = linear_speed[2]
+        self._params_vec_6d.input_double_register_3 = linear_speed[3]
+        self._params_vec_6d.input_double_register_4 = linear_speed[4]
+        self._params_vec_6d.input_double_register_5 = linear_speed[5]
+        self._params_1d_2.input_double_register_19 = linear_accel
+        self._params_1d_2.input_double_register_20 = return_time
+
+        self._con.send(self._params_vec_6d)
+        self._con.send(self._params_1d_2)
+        self._con.send(self._command)
+        self._wait_for_command_complete()
+
+    def stop_joints(self, joint_accel):
+        """Decelerate joint speeds to zero.
+
+        joint_accel is measured in deg/s/s (of leading axis)
+        """
+        joint_accel *= self._scale_angle
+        self._command.input_int_register_0 = 12
+        self._params_1d.input_double_register_18 = joint_accel
+        self._con.send(self._params_1d)
+        self._con.send(self._command)
+        self._wait_for_command_complete()
+
+    def stop_linear(self, linear_accel):
+        """Decelerate linear speed to zero.
+
+        linear_accel is measured in mm/s/s
+        """
+        linear_accel *= self._scale_linear
+        self._command.input_int_register_0 = 13
+        self._params_1d.input_double_register_18 = linear_accel
+        self._con.send(self._params_1d)
+        self._con.send(self._command)
+        self._wait_for_command_complete()
+
     def set_tcp(self, tcp):
         """Sets the tool center point (TCP) of the robot.
         
@@ -187,7 +278,7 @@ class RTDEClient:
         with the z-axis aligned with the tool flange center axis.
         
         tcp = (x, y, z, ax, ay, az)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         ax, ay, az specify an axis-angle rotation
         """
         tcp = np.array(tcp, dtype=np.float64).ravel()
@@ -271,13 +362,37 @@ class RTDEClient:
         """Returns the TCP pose in the reference coordinate frame.
         
         pose = (x, y, z, ax, ay, az)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         ax, ay, az specify an axis-angle rotation
         """
         self._state = self._con.receive()
         pose = np.array(self._state.actual_TCP_pose, dtype=np.float64)
         pose[:3] /= self._scale_linear      
         return pose
+
+    def get_joint_speeds(self):
+        """Returns the robot joint speeds.
+
+        joint_speeds = (jd0, jd1, jd2, jd3, jd4, jd5)
+        jd0, jd1, jd2, jd3, jd4, jd5 are numbered from base to end effector and are
+        measured in deg/s
+        """
+        self._state = self._con.receive()
+        joint_speeds = np.array(self._state.actual_qd, dtype=np.float64)
+        joint_speeds /= self._scale_angle
+        return joint_speeds
+
+    def get_linear_speed(self):
+        """Returns the linear speed in the reference coordinate frame.
+
+        linear speed = (xd, yd, zd, axd, ayd, azd)
+        xd, yd, zd specify a translational velocity (mm/s)
+        axd, ayd, azd specify an axis-angle rotational velocity (rad/s)
+        """
+        self._state = self._con.receive()
+        linear_speed = np.array(self._state.actual_TCP_speed, dtype=np.float64)
+        linear_speed[:3] /= self._scale_linear
+        return linear_speed
 
     def get_info(self):
         """Returns a unique robot identifier string.

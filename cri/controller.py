@@ -22,7 +22,7 @@ except ImportError:
 class RobotController(ABC):
     """Robot controller class provides a common interface to various robot arms.
     
-    Poses and coordinate frames are specified using 3D Euclidean positions
+    Poses and coordinate frames are specified using 3D Cartesian positions
     and quaternion rotations.  This makes it easy to perform coordinate
     transformations using quaternion operations.    
     """
@@ -55,7 +55,7 @@ class RobotController(ABC):
         with the z-axis aligned with the tool flange center axis.
         
         tool = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         pass
@@ -70,7 +70,7 @@ class RobotController(ABC):
         with the z-axis aligned with the tool flange center axis.
         
         tcp = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         pass
@@ -134,7 +134,7 @@ class RobotController(ABC):
         """Returns the TCP pose in the reference coordinate frame.
         
         pose = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         pass
@@ -155,7 +155,7 @@ class RobotController(ABC):
         the specified pose.
         
         pose = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         pass
@@ -166,7 +166,7 @@ class RobotController(ABC):
         pose, through via_pose, to end_pose.
         
         via_pose, end_pose = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         pass
@@ -185,7 +185,7 @@ class ABBController(RobotController):
     example in OpenABB project (https://github.com/robotics/open_abb), which
     has been modified to run under Python 3.
     
-    Poses and coordinate frames are specified using 3D Euclidean positions
+    Poses and coordinate frames are specified using 3D Cartesian positions
     and a quaternion rotations.  This format makes it easy to perform
     coordinate transformations.
     """
@@ -321,7 +321,7 @@ class ABBController(RobotController):
 class RTDEController(RobotController):
     """UR RTDE controller class implements common interface to robot arms.
     
-    Poses and coordinate frames are specified using 3D Euclidean positions
+    Poses and coordinate frames are specified using 3D Cartesian positions
     and quaternion rotations.  This format makes it easy to perform
     coordinate transformations.
     """
@@ -462,7 +462,7 @@ class RTDEController(RobotController):
 class FrankxController(RobotController):
     """Frankx controller class implements common interface to robot arms.
 
-    Poses and coordinate frames are specified using 3D Euclidean positions
+    Poses and coordinate frames are specified using 3D Cartesian positions
     and quaternion rotations.  This format makes it easy to perform
     coordinate transformations.
 

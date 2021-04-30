@@ -103,7 +103,7 @@ class ABBClient:
         the specified pose.
         
         pose = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (default mm)
+        x, y, z specify a Cartesian position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         pose = np.array(pose, dtype=np.float32).ravel()
@@ -124,7 +124,7 @@ class ABBClient:
         pose, through via_pose, to end_pose.
         
         via_pose, end_pose = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (default mm)
+        x, y, z specify a Cartesian position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """        
         via_pose = np.array(via_pose, dtype=np.float32).ravel()
@@ -150,7 +150,7 @@ class ABBClient:
         with the z-axis aligned with the tool flange center axis.
         
         tcp = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (default mm)
+        x, y, z specify a Cartesian position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         tcp = np.array(tcp, dtype=np.float32).ravel()
@@ -173,7 +173,7 @@ class ABBClient:
         subsequent linear moves will be in this coordinate frame. 
         
         work_object = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (default mm)
+        x, y, z specify a Cartesian position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         work_object = np.array(work_object, dtype=np.float32).ravel()
@@ -284,7 +284,7 @@ class ABBClient:
         """retvalsurns the TCP pose in the reference coordinate frame.
         
         pose = (x, y, z, qw, qx, qy, qz)
-        x, y, z specify a Euclidean position (default mm)
+        x, y, z specify a Cartesian position (default mm)
         qw, qx, qy, qz specify a quaternion rotation
         """
         command = 9

@@ -52,7 +52,7 @@ def check_pose(pose):
 class Robot(ABC):
     """Robot class provides common robot interface.
 
-    Poses and coordinate frames are specified using 3D Euclidean positions
+    Poses and coordinate frames are specified using 3D Cartesian positions
     and Euler rotations.  This makes it easier to specify poses and coordinate
     frames using a more intuitive representation than quaternions.
     """
@@ -113,7 +113,7 @@ class Robot(ABC):
         with the z-axis aligned with the tool flange center axis.
 
         tool = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         pass
@@ -128,7 +128,7 @@ class Robot(ABC):
         with the z-axis aligned with the tool flange center axis.
 
         tcp = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         pass
@@ -139,7 +139,7 @@ class Robot(ABC):
         """Returns the reference coordinate frame for the robot.
 
         frame = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         pass
@@ -150,7 +150,7 @@ class Robot(ABC):
         """Sets the reference coordinate frame for the robot.
 
         frame = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         pass
@@ -225,7 +225,7 @@ class Robot(ABC):
         """Returns the TCP pose in the reference coordinate frame.
 
         pose = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         pass
@@ -236,7 +236,7 @@ class Robot(ABC):
         """Returns the target TCP pose in the reference coordinate frame.
 
         pose = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         pass
@@ -257,7 +257,7 @@ class Robot(ABC):
         specified pose in the reference coordinate frame.
 
         pose = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         pass
@@ -268,7 +268,7 @@ class Robot(ABC):
         through via_pose, to end_pose in the reference coordinate frame.
 
         via_pose, end_pose = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         pass
@@ -566,7 +566,7 @@ class AsyncRobot(Robot):
         specified pose in the reference coordinate frame.
         
         pose = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         if self._busy:
@@ -582,7 +582,7 @@ class AsyncRobot(Robot):
         through via_pose, to end_pose in the reference coordinate frame.
 
         via_pose, end_pose = (x, y, z, alpha, beta, gamma)
-        x, y, z specify a Euclidean position (mm)
+        x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
         """
         if self._busy:

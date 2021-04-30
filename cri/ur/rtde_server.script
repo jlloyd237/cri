@@ -242,6 +242,116 @@ def run_server():
             # send command complete signal to client
             send_command_complete()
 
+        elif command == 10:     # move joint speed
+            # read joint speeds
+            jd0 = read_input_float_register(0)
+            jd1 = read_input_float_register(1)
+            jd2 = read_input_float_register(2)
+            jd3 = read_input_float_register(3)
+            jd4 = read_input_float_register(4)
+            jd5 = read_input_float_register(5)
+            move_joint_speeds = [jd0, jd1, jd2, jd3, jd4, jd5]
+
+            # read joint acceleration
+            move_joint_accel = read_input_float_register(19)
+
+            # read return time (<0 => unspecified)
+            return_time = read_input_float_register(20)
+
+            # wait for any previous worker thread to finish
+            if thread_running:
+                join worker_thread
+                thread_running = False
+            end
+
+            # run command asynchronously on worker thread
+            global worker_move_joint_speeds = move_joint_speeds
+            global worker_move_joint_accel = move_joint_accel
+            global worker_return_time = return_time
+            thread move_joint_speed_thread():
+                if worker_return_time < 0:
+                    speedj(worker_move_joint_speeds, a=worker_move_joint_accel)
+                else:
+                    speedj(worker_move_joint_speeds, a=worker_move_joint_accel, t=worker_return_time)
+                end
+            end
+            thread_running = True
+            worker_thread = run move_joint_speed_thread()
+
+            # send command complete signal to client
+            send_command_complete()
+
+        elif command == 11:     # move linear speed
+            # read linear speed
+            xd = read_input_float_register(0)
+            yd = read_input_float_register(1)
+            zd = read_input_float_register(2)
+            axd = read_input_float_register(3)
+            ayd = read_input_float_register(4)
+            azd = read_input_float_register(5)
+            move_linear_speed = [xd, yd, zd, axd, ayd, azd]
+
+            # read linear acceleration
+            move_linear_accel = read_input_float_register(19)
+
+            # read return time (<0 => unspecified)
+            return_time = read_input_float_register(20)
+
+            # wait for any previous worker thread to finish
+            if thread_running:
+                join worker_thread
+                thread_running = False
+            end
+
+            # run command asynchronously on worker thread
+            global worker_move_linear_speed = move_linear_speed
+            global worker_move_linear_accel = move_linear_accel
+            global worker_return_time = return_time
+            thread move_linear_speed_thread():
+                if worker_return_time < 0:
+                    speedl(worker_move_linear_speed, a=worker_move_linear_accel)
+                else:
+                    speedl(worker_move_linear_speed, a=worker_move_linear_accel, t=worker_return_time)
+                end
+            end
+            thread_running = True
+            worker_thread = run move_linear_speed_thread()
+
+            # send command complete signal to client
+            send_command_complete()
+
+        elif command == 12:     # stop joints
+            # read joint acceleration
+            stop_joints_accel = read_input_float_register(18)
+
+            # wait for any previous worker thread to finish
+            if thread_running:
+                join worker_thread
+                thread_running = False
+            end
+
+            # run command
+            stopj(stop_joints_accel)
+
+            # send command complete signal to client
+            send_command_complete()
+
+        elif command == 13:     # stop linear
+            # read linear acceleration
+            stop_linear_accel = read_input_float_register(18)
+
+            # wait for any previous worker thread to finish
+            if thread_running:
+                join worker_thread
+                thread_running = False
+            end
+
+            # run command
+            stopl(stop_linear_accel)
+
+            # send command complete signal to client
+            send_command_complete()
+
         else:
             popup("Invalid command")
 
