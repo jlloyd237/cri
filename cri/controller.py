@@ -15,6 +15,7 @@ from cri.ur.rtde_client import RTDEClient
 
 try:
     import frankx
+    import pyaffx
 except ImportError:
     warnings.warn("Failed to import frankx library: frankx controller not available")
 
@@ -743,7 +744,7 @@ class FrankxController(RobotController):
         pose = quat2euler(pose, axes='rzyx')
         pose[:3] *= self._scale_linear
         pose[3:] *= self._scale_angle
-        motion = frankx.LinearMotion(frankx.Affine(pose))
+        motion = frankx.LinearMotion(pyaffx.Affine(*pose))
         for attempt in range(self.MAX_MOVE_ATTEMPTS):
             if self._client.move(motion):
                 break
