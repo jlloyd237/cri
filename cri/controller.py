@@ -139,7 +139,14 @@ class RobotController(ABC):
         qw, qx, qy, qz specify a quaternion rotation
         """
         pass
-    
+
+    @property
+    @abstractmethod
+    def elbow(self):
+        """Returns the current elbow angle.
+        """
+        pass
+
     @abstractmethod
     def move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
@@ -151,24 +158,26 @@ class RobotController(ABC):
         pass
 
     @abstractmethod
-    def move_linear(self, pose):
+    def move_linear(self, pose, elbow):
         """Executes a linear/cartesian move from the current base frame pose to
         the specified pose.
         
         pose = (x, y, z, qw, qx, qy, qz)
         x, y, z specify a Cartesian position (mm)
         qw, qx, qy, qz specify a quaternion rotation
+        elbow = target elbow angle for 7-DOF robot arm (optional)
         """
         pass
 
     @abstractmethod
-    def move_circular(self, via_pose, end_pose):
+    def move_circular(self, via_pose, end_pose, elbow):
         """Executes a movement in a circular path from the current base frame
         pose, through via_pose, to end_pose.
         
         via_pose, end_pose = (x, y, z, qw, qx, qy, qz)
         x, y, z specify a Cartesian position (mm)
         qw, qx, qy, qz specify a quaternion rotation
+        elbow = target elbow angle for 7-DOF robot arm (optional)
         """
         pass
 
@@ -296,21 +305,32 @@ class ABBController(RobotController):
         """
         return self._client.get_pose()
 
+    @property
+    def elbow(self):
+        """Returns the current elbow angle.
+        """
+        warnings.warn("elbow property not implemented in ABB controller")
+        return None
+
     def move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
         """
         self._client.move_joints(joint_angles)
 
-    def move_linear(self, pose):
+    def move_linear(self, pose, elbow=None):
         """Executes a linear/cartesian move from the current base frame pose to
         the specified pose.
         """
+        if elbow is not None:
+            warnings.warn("elbow property not implemented in ABB controller")
         self._client.move_linear(pose)
 
-    def move_circular(self, via_pose, end_pose):
+    def move_circular(self, via_pose, end_pose, elbow=None):
         """Executes a movement in a circular path from the current base frame
         pose, through via_pose, to end_pose.
         """
+        if elbow is not None:
+            warnings.warn("elbow property not implemented in ABB controller")
         self._client.move_circular(via_pose, end_pose)
 
     def close(self):
@@ -436,21 +456,32 @@ class RTDEController(RobotController):
         """
         return axangle2quat(self._client.get_pose())  
 
+    @property
+    def elbow(self):
+        """Returns the current elbow angle.
+        """
+        warnings.warn("elbow property not implemented in RTDE controller")
+        return None
+
     def move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
         """
         self._client.move_joints(joint_angles)
 
-    def move_linear(self, pose):
+    def move_linear(self, pose, elbow=None):
         """Executes a linear/cartesian move from the current base frame pose to
         the specified pose.
         """
+        if elbow is not None:
+            warnings.warn("elbow property not implemented in RTDE controller")
         self._client.move_linear(quat2axangle(pose))
 
-    def move_circular(self, via_pose, end_pose):
+    def move_circular(self, via_pose, end_pose, elbow=None):
         """Executes a movement in a circular path from the current base frame
         pose, through via_pose, to end_pose.
         """
+        if elbow is not None:
+            warnings.warn("elbow property not implemented in RTDE controller")
         self._client.move_circular(quat2axangle(via_pose),
                                    quat2axangle(end_pose))
       
@@ -721,6 +752,15 @@ class FrankxController(RobotController):
         pose[:3] /= self._scale_linear
         return pose
 
+    @property
+    def elbow(self):
+        """Returns the current elbow angle.
+        """
+        state = self._client.read_once()
+        elbow = state.elbow[0]
+        elbow /= self._scale_angle
+        return elbow
+
     def move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
         """
@@ -736,15 +776,19 @@ class FrankxController(RobotController):
                 warnings.warn("Move failed - aborting")
             self._client.recover_from_errors()
 
-    def move_linear(self, pose):
+    def move_linear(self, pose, elbow=None):
         """Executes a linear/cartesian move from the current base frame pose to
-        the specified pose.
+        the specified pose, using the optional target elbow angle.
         """
         pose = inv_transform(self._offset, pose)
         pose = quat2euler(pose, axes='rzyx')
         pose[:3] *= self._scale_linear
         pose[3:] *= self._scale_angle
-        motion = frankx.LinearMotion(pyaffx.Affine(*pose))
+        if elbow is None:
+            motion = frankx.LinearMotion(pyaffx.Affine(*pose))
+        else:
+            elbow *= self._scale_angle
+            motion = frankx.LinearMotion(pyaffx.Affine(*pose), elbow)
         for attempt in range(self.MAX_MOVE_ATTEMPTS):
             if self._client.move(motion):
                 break
@@ -754,7 +798,7 @@ class FrankxController(RobotController):
                 warnings.warn("Move failed - aborting")
             self._client.recover_from_errors()
 
-    def move_circular(self, via_pose, end_pose):
+    def move_circular(self, via_pose, end_pose, elbow=None):
         """Executes a movement in a circular path from the current base frame
         pose, through via_pose, to end_pose.
         """

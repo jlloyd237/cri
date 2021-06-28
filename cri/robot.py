@@ -31,14 +31,6 @@ class AsyncNotBusy(RuntimeError):
     pass    
 
 
-class TargetJointAnglesNotSet(RuntimeError):
-    pass
-
-
-class TargetPoseNotSet(RuntimeError):
-    pass
-
-
 def check_joint_angles(joint_angles):
     if not (6 <= len(joint_angles) <= 7):
         raise InvalidJointAngles
@@ -241,6 +233,20 @@ class Robot(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def elbow(self):
+        """Returns the current elbow angle (degrees).
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def target_elbow(self):
+        """Returns the target elbow angle (degrees).
+        """
+        pass
+
     @abstractmethod
     def move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
@@ -252,24 +258,26 @@ class Robot(ABC):
         pass
 
     @abstractmethod
-    def move_linear(self, pose):
+    def move_linear(self, pose, elbow):
         """Executes a linear/cartesian move from the current TCP pose to the
         specified pose in the reference coordinate frame.
 
         pose = (x, y, z, alpha, beta, gamma)
         x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
+        elbow = target elbow angle for 7-DOF robot arm (optional; degrees)
         """
         pass
 
     @abstractmethod
-    def move_circular(self, via_pose, end_pose):
+    def move_circular(self, via_pose, end_pose, elbow):
         """Executes a movement in a circular path from the current TCP pose,
         through via_pose, to end_pose in the reference coordinate frame.
 
         via_pose, end_pose = (x, y, z, alpha, beta, gamma)
         x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
+        elbow = target elbow angle for 7-DOF robot arm (optional; degrees)
         """
         pass
 
@@ -296,6 +304,7 @@ class SyncRobot(Robot):
             self.blend_radius = 0                   # mm
             self._target_joint_angles = None
             self._target_base_pose_q = None
+            self._target_elbow = None
         except:
             self.controller.close()
             raise
@@ -391,8 +400,6 @@ class SyncRobot(Robot):
     def target_joint_angles(self):
         """ Returns the target robot joint angles.
         """
-        if self._target_joint_angles is None:
-            raise TargetJointAnglesNotSet
         return self._target_joint_angles
 
     @property
@@ -410,11 +417,25 @@ class SyncRobot(Robot):
         """Returns the target TCP pose in the reference coordinate frame.
         """
         if self._target_base_pose_q is None:
-            raise TargetPoseNotSet
+            return None
         if self._is_base_frame:
             return quat2euler(self._target_base_pose_q, self._axes)
         else:
             return quat2euler(transform(self._target_base_pose_q, self._coord_frame_q), self._axes)
+
+    @property
+    @abstractmethod
+    def elbow(self):
+        """Returns the current elbow angle (degrees).
+        """
+        return self.controller.elbow
+
+    @property
+    @abstractmethod
+    def target_elbow(self):
+        """Returns the target elbow angle (degrees).
+        """
+        return self._target_elbow
 
     def move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
@@ -423,7 +444,7 @@ class SyncRobot(Robot):
         self._target_joint_angles = np.array(joint_angles)
         self.controller.move_joints(self._target_joint_angles)
     
-    def move_linear(self, pose):
+    def move_linear(self, pose, elbow=None):
         """Executes a linear/cartesian move from the current TCP pose to the
         specified pose in the reference coordinate frame.
         """
@@ -432,9 +453,10 @@ class SyncRobot(Robot):
             self._target_base_pose_q = euler2quat(pose, self._axes)
         else:
             self._target_base_pose_q = inv_transform(euler2quat(pose, self._axes), self._coord_frame_q)
-        self.controller.move_linear(self._target_base_pose_q)
+        self._target_elbow = elbow
+        self.controller.move_linear(self._target_base_pose_q, self._target_elbow)
 
-    def move_circular(self, via_pose, end_pose):
+    def move_circular(self, via_pose, end_pose, elbow=None):
         """Executes a movement in a circular path from the current TCP pose,
         through via_pose, to end_pose in the reference coordinate frame.
         """
@@ -446,7 +468,8 @@ class SyncRobot(Robot):
         else:
             _via_base_pose_q = inv_transform(euler2quat(via_pose, self._axes), self._coord_frame_q)
             self._target_base_pose_q = inv_transform(euler2quat(end_pose, self._axes), self._coord_frame_q)
-        self.controller.move_circular(_via_base_pose_q, self._target_base_pose_q)
+        self._target_elbow = elbow
+        self.controller.move_circular(_via_base_pose_q, self._target_base_pose_q, self._target_elbow)
    
     def close(self):
         """Releases any resources held by the robot (e.g., sockets).
@@ -537,14 +560,22 @@ class AsyncRobot(Robot):
     def target_pose(self):
         return self.sync_robot.target_pose
 
+    @property
+    def elbow(self):
+        return self.sync_robot.elbow
+
+    @property
+    def target_elbow(self):
+        return self.sync_robot.target_elbow
+
     def move_joints(self, joint_angles):
         self.sync_robot.move_joints(joint_angles)
 
-    def move_linear(self, pose):
-        self.sync_robot.move_linear(pose)
+    def move_linear(self, pose, elbow=None):
+        self.sync_robot.move_linear(pose, elbow)
 
-    def move_circular(self, via_pose, end_pose):
-        self.sync_robot.move_circular(via_pose, end_pose)
+    def move_circular(self, via_pose, end_pose, elbow=None):
+        self.sync_robot.move_circular(via_pose, end_pose, elbow)
 
     def async_move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
@@ -561,36 +592,38 @@ class AsyncRobot(Robot):
                               args=(joint_angles, self._results))
         self._worker.start()
     
-    def async_move_linear(self, pose):
+    def async_move_linear(self, pose, elbow=None):
         """Executes a linear/cartesian move from the current TCP pose to the
         specified pose in the reference coordinate frame.
         
         pose = (x, y, z, alpha, beta, gamma)
         x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
+        elbow = target elbow angle for 7-DOF robot arms (optional; degrees)
         """
         if self._busy:
             raise AsyncBusy   
         self._busy = True
-        self._worker = Thread(target=lambda pose, results: \
-                              results.put(self.sync_robot.move_linear(pose)), \
-                              args=(pose, self._results))
+        self._worker = Thread(target=lambda pose, elbow, results: \
+                              results.put(self.sync_robot.move_linear(pose, elbow)), \
+                              args=(pose, elbow, self._results))
         self._worker.start()
 
-    def async_move_circular(self, via_pose, end_pose):
+    def async_move_circular(self, via_pose, end_pose, elbow=None):
         """Executes a movement in a circular path from the current TCP pose,
         through via_pose, to end_pose in the reference coordinate frame.
 
         via_pose, end_pose = (x, y, z, alpha, beta, gamma)
         x, y, z specify a Cartesian position (mm)
         alpha, beta, gamma specify an euler rotation (degrees)
+        elbow = target elbow angle for 7-DOF robot arms (optional; degrees)
         """
         if self._busy:
             raise AsyncBusy
         self._busy = True
-        self._worker = Thread(target=lambda via_pose, end_pose, results: \
-                              results.put(self.sync_robot.move_circular(via_pose, end_pose)),\
-                              args=(via_pose, end_pose, self._results))
+        self._worker = Thread(target=lambda via_pose, end_pose, elbow, results: \
+                              results.put(self.sync_robot.move_circular(via_pose, end_pose, elbow)),\
+                              args=(via_pose, end_pose, elbow, self._results))
         self._worker.start()
     
     def async_result(self):
