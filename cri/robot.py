@@ -424,14 +424,12 @@ class SyncRobot(Robot):
             return quat2euler(transform(self._target_base_pose_q, self._coord_frame_q), self._axes)
 
     @property
-    @abstractmethod
     def elbow(self):
         """Returns the current elbow angle (degrees).
         """
         return self.controller.elbow
 
     @property
-    @abstractmethod
     def target_elbow(self):
         """Returns the target elbow angle (degrees).
         """
