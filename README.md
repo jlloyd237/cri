@@ -37,9 +37,9 @@ For a Franka Panda robot, a server is not required, as the communication with th
 
 ## Usage example
 
-A few examples that demonstrate how to use the framework are included in the `/tests` directory.  These can be modified to suit different system configurations and requirements (e.g., IP address, work space, work frame, etc.)
+A few examples that demonstrate how to use the framework are included in the `/examples` directory.  These can be modified to suit different system configurations and requirements (e.g., IP address, work space, work frame, etc.)
 
-After installing and running the server (ABB and UR robots), the test scripts can be run from the `/tests` directory using one of the following:
+After installing and running the server (ABB and UR robots), the examples can be run from the `/examples` directory using one of the following:
 
 ```sh
 python abb_robot_test.py
