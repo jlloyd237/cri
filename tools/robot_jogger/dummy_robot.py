@@ -48,6 +48,17 @@ class DummyFrankxController:
     def __str__(self):
         return self.__repr__()
 
+class DummyPyfrankaController:
+    """Dummy Pyfranka controller class.
+    """
+    def __init__(self, ip='172.16.0.2'):
+        logger.debug("DummyPyfrankaController.__init__(ip={})".format(ip))
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+    def __str__(self):
+        return self.__repr__()
 
 class DummySyncRobot:
     """Dummy synchronous robot class.

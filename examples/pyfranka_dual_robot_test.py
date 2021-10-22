@@ -7,7 +7,7 @@ import time
 import numpy as np
 
 from cri.robot import SyncRobot, AsyncRobot
-from cri.controller import FrankxController
+from cri.controller import PyfrankaController
 
 np.set_printoptions(precision=2, suppress=True)
 
@@ -16,20 +16,21 @@ def main():
     base_frame = (0, 0, 0, 0, 0, 0)
     work_frame = (400, 0, 300, 180, 0, 180)   # base frame: x->front, y->right, z->up
 
-    with AsyncRobot(SyncRobot(FrankxController(ip='172.16.0.2'))) as robot_1, \
-        AsyncRobot(SyncRobot(FrankxController(ip='172.16.1.2'))) as robot_2:
+    with AsyncRobot(SyncRobot(PyfrankaController(ip='172.16.0.2'))) as robot_1, \
+        AsyncRobot(SyncRobot(PyfrankaController(ip='172.16.1.2'))) as robot_2:
 
         robots = [robot_1, robot_2]
 
         # Set robot axes and TCP
         for i, robot in enumerate(robots):
             robot.axes = 'sxyz'     # static/extrinsic frame xyz convention
-            robot.tcp = (0, 0, 75, 0, 0, -135)
+            robot.tcp = (0, 0, 75, 0, 0, 225)
 
             # Set Franka-specific robot parameters
-            robot.sync_robot.controller.rel_velocity = 0.3
-            robot.sync_robot.controller.rel_accel = 0.2
-            robot.sync_robot.controller.rel_jerk = 0.1
+            # robot.sync_robot.controller.set_joint_impedance((3000, 3000, 3000, 2500, 2500, 2000, 2000))
+            robot.sync_robot.controller.rel_velocity = 1.0
+            robot.sync_robot.controller.rel_accel = 1.0
+            robot.sync_robot.controller.rel_jerk = 1.0
 
             # Display robot info
             print("Robot {} info: {}".format(i + 1, robot.info))

@@ -15,12 +15,13 @@ from PyQt5.QtWidgets import QApplication, QDialog, QStyleFactory, QToolTip, \
 from PyQt5.QtGui import QIcon, QFont
 
 from cri.robot import SyncRobot
-from cri.controller import ABBController, RTDEController, FrankxController
+from cri.controller import ABBController, RTDEController, FrankxController, PyfrankaController
 
 # Uncomment for testing/debugging
 # from dummy_robot import DummySyncRobot as SyncRobot
 # from dummy_robot import DummyABBController as ABBController, \
-#    DummyRTDEController as RTDEController, DummyFrankxController as FrankxController
+#     DummyRTDEController as RTDEController, DummyFrankxController as FrankxController, \
+#     DummyPyfrankaController as PyfrankaController
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -384,7 +385,7 @@ class JoggerDialog(QDialog):
             elif robot == "ur":
                 self.robot = SyncRobot(RTDEController(ip))
             elif robot == "franka":
-                self.robot = SyncRobot(FrankxController(ip))
+                self.robot = SyncRobot(PyfrankaController(ip))
         except:
             msg = QErrorMessage(self)
             msg.showMessage("Failed to connect to server")
