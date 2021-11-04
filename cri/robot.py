@@ -299,12 +299,6 @@ class SyncRobot(Robot):
             self.axes = 'rxyz'
             self.tcp = (0, 0, 0, 0, 0, 0)           # tool flange frame (euler)
             self.coord_frame = (0, 0, 0, 0, 0, 0)   # base frame (euler)
-            self.linear_speed = 20                  # mm/s
-            self.angular_speed = 20                 # deg/s
-            self.blend_radius = 0                   # mm
-            self._target_joint_angles = None
-            self._target_base_pose_q = None
-            self._target_elbow = None
         except:
             self.controller.close()
             raise
@@ -352,7 +346,6 @@ class SyncRobot(Robot):
         """
         check_pose(frame)
         self._coord_frame_q = euler2quat(frame, self._axes)
-        self._is_base_frame = np.array_equal(frame, (0, 0, 0, 0, 0, 0))
 
     @property
     def linear_speed(self):
@@ -392,36 +385,29 @@ class SyncRobot(Robot):
 
     @property
     def joint_angles(self):
-        """ Returns the robot joint angles.
+        """ Returns the current joint angles.
         """
         return self.controller.joint_angles
 
     @property
     def target_joint_angles(self):
-        """ Returns the target robot joint angles.
+        """ Returns the target joint angles.
         """
-        return self._target_joint_angles
+        return self.controller.commanded_joint_angles
 
     @property
     def pose(self):
-        """Returns the TCP pose in the reference coordinate frame.
+        """Returns the current TCP pose in the reference coordinate frame.
         """
         pose_q = self.controller.pose
-        if self._is_base_frame:
-            return quat2euler(pose_q, self._axes)
-        else:
-            return quat2euler(transform(pose_q, self._coord_frame_q), self._axes)
+        return quat2euler(transform(pose_q, self._coord_frame_q), self._axes)
 
     @property
     def target_pose(self):
         """Returns the target TCP pose in the reference coordinate frame.
         """
-        if self._target_base_pose_q is None:
-            return None
-        if self._is_base_frame:
-            return quat2euler(self._target_base_pose_q, self._axes)
-        else:
-            return quat2euler(transform(self._target_base_pose_q, self._coord_frame_q), self._axes)
+        pose_q = self.controller.commanded_pose
+        return quat2euler(transform(pose_q, self._coord_frame_q), self._axes)
 
     @property
     def elbow(self):
@@ -433,26 +419,22 @@ class SyncRobot(Robot):
     def target_elbow(self):
         """Returns the target elbow angle (degrees).
         """
-        return self._target_elbow
+        return self.controller.commanded_elbow
 
     def move_joints(self, joint_angles):
         """Executes an immediate move to the specified joint angles.
         """
         check_joint_angles(joint_angles)
-        self._target_joint_angles = np.array(joint_angles)
-        self.controller.move_joints(self._target_joint_angles)
+        joint_angles = np.array(joint_angles)
+        self.controller.move_joints(joint_angles)
     
     def move_linear(self, pose, elbow=None):
         """Executes a linear/cartesian move from the current TCP pose to the
         specified pose in the reference coordinate frame.
         """
         check_pose(pose)
-        if self._is_base_frame:
-            self._target_base_pose_q = euler2quat(pose, self._axes)
-        else:
-            self._target_base_pose_q = inv_transform(euler2quat(pose, self._axes), self._coord_frame_q)
-        self._target_elbow = elbow
-        self.controller.move_linear(self._target_base_pose_q, self._target_elbow)
+        target_base_pose_q = inv_transform(euler2quat(pose, self._axes), self._coord_frame_q)
+        self.controller.move_linear(target_base_pose_q, elbow)
 
     def move_circular(self, via_pose, end_pose, elbow=None):
         """Executes a movement in a circular path from the current TCP pose,
@@ -460,14 +442,9 @@ class SyncRobot(Robot):
         """
         check_pose(via_pose)
         check_pose(end_pose)
-        if self._is_base_frame:
-            _via_base_pose_q = euler2quat(via_pose, self._axes)
-            self._target_base_pose_q = euler2quat(end_pose, self._axes)
-        else:
-            _via_base_pose_q = inv_transform(euler2quat(via_pose, self._axes), self._coord_frame_q)
-            self._target_base_pose_q = inv_transform(euler2quat(end_pose, self._axes), self._coord_frame_q)
-        self._target_elbow = elbow
-        self.controller.move_circular(_via_base_pose_q, self._target_base_pose_q, self._target_elbow)
+        via_base_pose_q = inv_transform(euler2quat(via_pose, self._axes), self._coord_frame_q)
+        target_base_pose_q = inv_transform(euler2quat(end_pose, self._axes), self._coord_frame_q)
+        self.controller.move_circular(via_base_pose_q, target_base_pose_q, elbow)
    
     def close(self):
         """Releases any resources held by the robot (e.g., sockets).

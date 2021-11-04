@@ -347,7 +347,7 @@ class RTDEClient:
         self._wait_for_command_complete()
 
     def get_joint_angles(self):
-        """Returns the robot joint angles.
+        """Returns the current joint angles.
         
         joint_angles = (j0, j1, j2, j3, j4, j5)
         j0, j1, j2, j3, j4, j5 are numbered from base to end effector and are
@@ -358,8 +358,20 @@ class RTDEClient:
         joint_angles /= self._scale_angle
         return joint_angles
 
+    def get_target_joint_angles(self):
+        """Returns the target joint angles.
+
+        joint_angles = (j0, j1, j2, j3, j4, j5)
+        j0, j1, j2, j3, j4, j5 are numbered from base to end effector and are
+        measured in degrees
+        """
+        self._state = self._con.receive()
+        joint_angles = np.array(self._state.target_q, dtype=np.float64)
+        joint_angles /= self._scale_angle
+        return joint_angles
+
     def get_pose(self):
-        """Returns the TCP pose in the reference coordinate frame.
+        """Returns the current TCP pose in the reference coordinate frame.
         
         pose = (x, y, z, ax, ay, az)
         x, y, z specify a Cartesian position (mm)
@@ -370,8 +382,20 @@ class RTDEClient:
         pose[:3] /= self._scale_linear      
         return pose
 
+    def get_target_pose(self):
+        """Returns the target TCP pose in the reference coordinate frame.
+
+        pose = (x, y, z, ax, ay, az)
+        x, y, z specify a Cartesian position (mm)
+        ax, ay, az specify an axis-angle rotation
+        """
+        self._state = self._con.receive()
+        pose = np.array(self._state.target_TCP_pose, dtype=np.float64)
+        pose[:3] /= self._scale_linear
+        return pose
+
     def get_joint_speeds(self):
-        """Returns the robot joint speeds.
+        """Returns the current joint speeds.
 
         joint_speeds = (jd0, jd1, jd2, jd3, jd4, jd5)
         jd0, jd1, jd2, jd3, jd4, jd5 are numbered from base to end effector and are
@@ -382,8 +406,20 @@ class RTDEClient:
         joint_speeds /= self._scale_angle
         return joint_speeds
 
+    def get_target_joint_speeds(self):
+        """Returns the target joint speeds.
+
+        joint_speeds = (jd0, jd1, jd2, jd3, jd4, jd5)
+        jd0, jd1, jd2, jd3, jd4, jd5 are numbered from base to end effector and are
+        measured in deg/s
+        """
+        self._state = self._con.receive()
+        joint_speeds = np.array(self._state.target_qd, dtype=np.float64)
+        joint_speeds /= self._scale_angle
+        return joint_speeds
+
     def get_linear_speed(self):
-        """Returns the linear speed in the reference coordinate frame.
+        """Returns the current linear speed in the reference coordinate frame.
 
         linear speed = (xd, yd, zd, axd, ayd, azd)
         xd, yd, zd specify a translational velocity (mm/s)
@@ -391,6 +427,18 @@ class RTDEClient:
         """
         self._state = self._con.receive()
         linear_speed = np.array(self._state.actual_TCP_speed, dtype=np.float64)
+        linear_speed[:3] /= self._scale_linear
+        return linear_speed
+
+    def get_target_linear_speed(self):
+        """Returns the target linear speed in the reference coordinate frame.
+
+        linear speed = (xd, yd, zd, axd, ayd, azd)
+        xd, yd, zd specify a translational velocity (mm/s)
+        axd, ayd, azd specify an axis-angle rotational velocity (rad/s)
+        """
+        self._state = self._con.receive()
+        linear_speed = np.array(self._state.target_TCP_speed, dtype=np.float64)
         linear_speed[:3] /= self._scale_linear
         return linear_speed
 
