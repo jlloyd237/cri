@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QApplication, QDialog, QStyleFactory, QToolTip, \
 from PyQt5.QtGui import QIcon, QFont
 
 from cri.robot import SyncRobot
-from cri.controller import ABBController, RTDEController, FrankxController, PyfrankaController
+from cri.controller import ABBController, RTDEController, PyfrankaController
 
 # Uncomment for testing/debugging
 # from dummy_robot import DummySyncRobot as SyncRobot

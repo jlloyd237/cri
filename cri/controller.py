@@ -611,11 +611,23 @@ class PyfrankaController(RobotController):
         """
         return self._client.max_trans_velocity / self._scale_linear
 
+    @max_trans_velocity.setter
+    def max_trans_velocity(self, val):
+        """Sets the maximum translational velocity of the robot TCP (mm/s).
+        """
+        self._client.max_trans_velocity = val * self._scale_linear
+
     @property
     def max_rot_velocity(self):
         """Returns the maximum rotational velocity of the robot TCP (deg/s).
         """
         return self._client.max_rot_velocity / self._scale_angle
+
+    @max_rot_velocity.setter
+    def max_rot_velocity(self, val):
+        """Sets the maximum rotational velocity of the robot TCP (deg/s).
+        """
+        self._client.max_trans_velocity = val * self._scale_angle
 
     @property
     def max_joint_velocity(self):
@@ -623,11 +635,23 @@ class PyfrankaController(RobotController):
         """
         return self._client.max_joint_velocity / self._scale_angle
 
+    @max_joint_velocity.setter
+    def max_joint_velocity(self, val):
+        """Sets the maximum joint velocity of the robot TCP (deg/s).
+        """
+        self._client.max_joint_velocity = val * self._scale_angle
+
     @property
     def max_trans_accel(self):
         """Returns the maximum translational acceleration of the robot TCP (mm/s/s).
         """
         return self._client.max_trans_accel / self._scale_linear
+
+    @max_trans_accel.setter
+    def max_trans_accel(self, val):
+        """Sets the maximum translational acceleration of the robot TCP (mm/s/s).
+        """
+        self._client.max_trans_accel = val * self._scale_linear
 
     @property
     def max_rot_accel(self):
@@ -635,11 +659,23 @@ class PyfrankaController(RobotController):
         """
         return self._client.max_rot_accel / self._scale_angle
 
+    @max_rot_accel.setter
+    def max_rot_accel(self, val):
+        """Sets the maximum rotational acceleration of the robot TCP (deg/s/s).
+        """
+        self._client.max_rot_accel = val * self._scale_angle
+
     @property
     def max_joint_accel(self):
         """Returns the maximum joint acceleration of the robot (deg/s/s).
         """
         return self._client.max_joint_accel / self._scale_angle
+
+    @max_joint_accel.setter
+    def max_joint_accel(self, val):
+        """Sets the maximum joint acceleration of the robot TCP (deg/s/s).
+        """
+        self._client.max_joint_accel = val * self._scale_angle
 
     @property
     def max_trans_jerk(self):
@@ -647,17 +683,35 @@ class PyfrankaController(RobotController):
         """
         return self._client.max_trans_jerk / self._scale_linear
 
+    @max_trans_jerk.setter
+    def max_trans_jerk(self, val):
+        """Sets the maximum translational jerk of the robot TCP (mm/s/s/s).
+        """
+        self._client.max_trans_jerk = val * self._scale_linear
+
     @property
     def max_rot_jerk(self):
         """Returns the maximum rotational jerk of the robot TCP (deg/s/s/s).
         """
         return self._client.max_rot_jerk / self._scale_angle
 
+    @max_rot_jerk.setter
+    def max_rot_jerk(self, val):
+        """Sets the maximum rotational jerk of the robot TCP (deg/s/s/s).
+        """
+        self._client.max_rot_jerk = val * self._scale_angle
+
     @property
     def max_joint_jerk(self):
         """Returns the maximum joint jerk of the robot TCP (deg/s/s/s).
         """
         return self._client.max_joint_jerk / self._scale_linear
+
+    @max_joint_jerk.setter
+    def max_joint_jerk(self, val):
+        """Sets the maximum joint jerk of the robot TCP (deg/s/s/s).
+        """
+        self._client.max_joint_jerk = val * self._scale_angle
 
     @property
     def rel_velocity(self):
@@ -785,6 +839,7 @@ class PyfrankaController(RobotController):
         joint_angles /= self._scale_angle
         return joint_angles
 
+    @property
     def desired_joint_angles(self):
         """Returns the desired joint angles.
         """
@@ -792,12 +847,37 @@ class PyfrankaController(RobotController):
         joint_angles /= self._scale_angle
         return joint_angles
 
+    @property
     def commanded_joint_angles(self):
         """Returns the commanded joint angles.
         """
         joint_angles = self._client.commanded_joints
         joint_angles /= self._scale_angle
         return joint_angles
+
+    @property
+    def joint_velocities(self):
+        """Returns the current joint velocities.
+        """
+        joint_velocities = self._client.current_joints_velocity
+        joint_velocities /= self._scale_angle
+        return joint_velocities
+
+    @property
+    def desired_joint_velocities(self):
+        """Returns the desired joint velocities.
+        """
+        joint_velocities = self._client.desired_joints_velocity
+        joint_velocities /= self._scale_angle
+        return joint_velocities
+
+    @property
+    def commanded_joint_velocities(self):
+        """Returns the commanded joint velocities.
+        """
+        joint_velocities = self._client.commanded_joints_velocity
+        joint_velocities /= self._scale_angle
+        return joint_velocities
 
     @property
     def pose(self):
@@ -822,6 +902,24 @@ class PyfrankaController(RobotController):
         pose = np.concatenate(self._client.commanded_pose)
         pose[:3] /= self._scale_linear
         return pose
+
+    @property
+    def desired_linear_velocity(self):
+        """Returns the desired linear velocity.
+        """
+        linear_velocity = self._client.desired_linear_velocity
+        linear_velocity[:3] /= self._scale_linear
+        linear_velocity[3:] /= self._scale_angle
+        return linear_velocity
+
+    @property
+    def commanded_linear_velocity(self):
+        """Returns the commanded linear velocity.
+        """
+        linear_velocity = self._client.commanded_linear_velocity
+        linear_velocity[:3] /= self._scale_linear
+        linear_velocity[3:] /= self._scale_angle
+        return linear_velocity
 
     @property
     def elbow(self):
@@ -869,6 +967,29 @@ class PyfrankaController(RobotController):
             target_elbow = self._client.current_elbow
             target_elbow[0] = elbow
             self._client.move_linear((pose[:3], pose[3:]), target_elbow)
+
+    def move_joints_velocity(self, joints_velocity):
+        """Executes an immediate move to the specified joint velocities.
+        """
+        joints_velocity = np.array(joints_velocity, dtype=np.float64).ravel()
+        joints_velocity *= self._scale_angle
+
+        self._client.move_joints_velocity(joints_velocity)
+
+    def move_linear_velocity(self, linear_velocity, elbow=None):
+        """Executes an immediate move to the specified linear velocity.
+        """
+        linear_velocity = np.array(linear_velocity, dtype=np.float64).ravel()
+        linear_velocity[:3] *= self._scale_linear
+        linear_velocity[3:] *= self._scale_angle
+
+        if elbow is None:
+            self._client.move_linear_velocity(linear_velocity)
+        else:
+            elbow *= self._scale_angle
+            target_elbow = self._client.current_elbow
+            target_elbow[0] = elbow
+            self._client.move_linear_velocity(linear_velocity, target_elbow)
 
     def move_circular(self, via_pose, end_pose, elbow=None):
         """Executes a movement in a circular path from the current base frame

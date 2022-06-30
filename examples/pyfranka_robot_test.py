@@ -16,7 +16,7 @@ def main():
     base_frame = (0, 0, 0, 0, 0, 0)
     work_frame = (400, 0, 300, 180, 0, 180)   # base frame: x->front, y->left, z->down
 
-    with AsyncRobot(SyncRobot(PyfrankaController(ip='172.16.0.2'))) as robot:
+    with AsyncRobot(SyncRobot(PyfrankaController(ip='172.16.0.1'))) as robot:
         # Set robot axes and TCP
         robot.axes = 'sxyz'     # static/extrinsic frame xyz convention
         robot.tcp = (0, 0, 75, 0, 0, 225)
@@ -45,6 +45,7 @@ def main():
         # Increase and decrease all joint angles
         print("Increasing and decreasing all joint angles ...")
         robot.move_joints(robot.joint_angles + (10,)*7)
+
         print("Target joint angles after increase: {}".format(robot.target_joint_angles))
         print("Joint angles after increase: {}".format(robot.joint_angles))
         robot.move_joints(robot.joint_angles - (10,)*7)

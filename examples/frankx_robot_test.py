@@ -16,7 +16,7 @@ def main():
     base_frame = (0, 0, 0, 0, 0, 0)
     work_frame = (400, 0, 300, 180, 0, 180)   # base frame: x->front, y->right, z->up
 
-    with AsyncRobot(SyncRobot(FrankxController(ip='172.16.0.2'))) as robot:
+    with AsyncRobot(SyncRobot(FrankxController(ip='172.16.0.1'))) as robot:
         # Set robot axes and TCP
         robot.axes = 'sxyz'     # static/extrinsic frame xyz convention
         robot.tcp = (0, 0, 75, 0, 0, -135)

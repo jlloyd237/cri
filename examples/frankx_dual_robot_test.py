@@ -16,8 +16,8 @@ def main():
     base_frame = (0, 0, 0, 0, 0, 0)
     work_frame = (400, 0, 300, 180, 0, 180)   # base frame: x->front, y->right, z->up
 
-    with AsyncRobot(SyncRobot(FrankxController(ip='172.16.0.2'))) as robot_1, \
-        AsyncRobot(SyncRobot(FrankxController(ip='172.16.1.2'))) as robot_2:
+    with AsyncRobot(SyncRobot(FrankxController(ip='172.16.0.1'))) as robot_1, \
+        AsyncRobot(SyncRobot(FrankxController(ip='172.16.1.1'))) as robot_2:
 
         robots = [robot_1, robot_2]
 
