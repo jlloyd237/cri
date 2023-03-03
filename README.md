@@ -4,7 +4,7 @@
 The Common Robot Interface (CRI) library currently supports the following robot arms:
 
 - ABB Robotics IRB 120
-- Universal Robots UR5 - using the [Real-Time Data Exchange (RTDE)](https://www.universal-robots.com/articles/ur/interface-communication/real-time-data-exchange-rtde-guide/) protocol
+- Universal Robots UR3/5/10 - using the [Real-Time Data Exchange (RTDE)](https://www.universal-robots.com/articles/ur/interface-communication/real-time-data-exchange-rtde-guide/) protocol
 - Franka Panda - using the [Pyfranka library](https://github.com/jlloyd237/pyfranka)
 
 A GUI-based robot jogger tool is also included with the library.  This tool can be used to move the robot into different configurations, and is particularly useful for setting up experiments.
