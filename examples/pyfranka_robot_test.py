@@ -45,7 +45,6 @@ def main():
         # Increase and decrease all joint angles
         print("Increasing and decreasing all joint angles ...")
         robot.move_joints(robot.joint_angles + (10,)*7)
-
         print("Target joint angles after increase: {}".format(robot.target_joint_angles))
         print("Joint angles after increase: {}".format(robot.joint_angles))
         robot.move_joints(robot.joint_angles - (10,)*7)
@@ -109,9 +108,13 @@ def main():
         print("Repeating test sequence for asynchronous moves ...")
 
         # Increase and decrease all joint angles (async)
+        print("Joint angles before increase: {}".format(robot.joint_angles))
         print("Increasing and decreasing all joint angles ...")
         robot.async_move_joints(robot.joint_angles + (10,)*7)
         print("Getting on with something else while command completes ...")
+        for i in range(10):
+            print("Joint angles during increase: {}".format(robot.joint_angles))
+            time.sleep(0.2)
         robot.async_result()
         print("Target joint angles after increase: {}".format(robot.target_joint_angles))
         print("Joint angles after increase: {}".format(robot.joint_angles))
@@ -143,6 +146,9 @@ def main():
         print("Moving down and up (async) ...")
         robot.async_move_linear((0, 0, 50, 0, 0, 0))
         print("Getting on with something else while command completes ...")
+        for i in range(10):
+            print("Pose during move down: {}".format(robot.pose))
+            time.sleep(0.1)
         robot.async_result()
         robot.async_move_linear((0, 0, 0, 0, 0, 0))
         print("Getting on with something else while command completes ...")

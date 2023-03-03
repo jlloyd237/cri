@@ -46,10 +46,16 @@ def main():
 
         print("Moving forward with constant velocity in x direction ...")
         controller.move_linear_velocity((30, 0, 0, 0, 0, 0))
-        time.sleep(5)
+        for i in range(10):
+            print("Pose during move forward: {}".format(robot.pose))
+            time.sleep(0.1)
+        time.sleep(4)
         print("Reversing with constant velocity in -x direction...")
         controller.move_linear_velocity((-30, 0, 0, 0, 0, 0))
-        time.sleep(5)
+        for i in range(10):
+            print("Pose during move backward: {}".format(robot.pose))
+            time.sleep(0.1)
+        time.sleep(4)
         print("Stopping ...")
         controller.move_linear_velocity((0, 0, 0, 0, 0, 0))
 

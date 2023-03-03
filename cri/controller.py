@@ -572,11 +572,13 @@ class PyfrankaController(RobotController):
     coordinate transformations.
     """
 
-    def __init__(self, ip='172.16.0.2'):
+    def __init__(self, ip='172.16.0.1'):
         self._ip = ip
         self._client = pyfranka.Robot(ip)
         self._client.recover_from_errors()
         self._client.set_default_behavior()
+
+        self._gripper = None
 
         self.set_units('millimeters', 'degrees')
         self.tcp = (0, 0, 0, 0, 1, 0, 0)    # Re-align TCP with base frame
@@ -586,10 +588,18 @@ class PyfrankaController(RobotController):
         self.rel_jerk = 0.1
 
     @property
+    def gripper(self):
+        """Returns a gripper object for this robot.
+        """
+        if self._gripper is None:
+            self._gripper = pyfranka.Gripper(self._ip)
+        return self._gripper
+
+    @property
     def info(self):
         """Returns a unique robot identifier string.
         """
-        return "ip: {}, server version: {}".format(self._ip, self._client.server_version())
+        return "ip: {}, server version: {}".format(self._ip, self._client.server_version)
 
     @property
     def tcp(self):
