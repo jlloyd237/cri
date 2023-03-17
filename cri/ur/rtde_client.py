@@ -222,12 +222,13 @@ class RTDEClient:
 
         linear speed = (xd, yd, zd, axd, ayd, azd)
         xd, yd, zd specify a translational velocity (mm/s)
-        axd, ayd, azd specify an axis-angle rotational velocity (rad/s)
+        axd, ayd, azd specify an axis-angle rotational velocity (deg/s)
         linear_accel is measured in mm/s/s
         return_time is measured in secs before the function returns (optional)
         """
         linear_speed = np.array(linear_speed, dtype=np.float64).ravel()
         linear_speed[:3] *= self._scale_linear
+        linear_speed[3:] *= self._scale_angle
         linear_accel *= self._scale_linear
         return_time = -1 if return_time is None else return_time
 
@@ -423,11 +424,12 @@ class RTDEClient:
 
         linear speed = (xd, yd, zd, axd, ayd, azd)
         xd, yd, zd specify a translational velocity (mm/s)
-        axd, ayd, azd specify an axis-angle rotational velocity (rad/s)
+        axd, ayd, azd specify an axis-angle rotational velocity (deg/s)
         """
         self._state = self._con.receive()
         linear_speed = np.array(self._state.actual_TCP_speed, dtype=np.float64)
         linear_speed[:3] /= self._scale_linear
+        linear_speed[3:] /= self._scale_angle
         return linear_speed
 
     def get_target_linear_speed(self):
@@ -435,11 +437,12 @@ class RTDEClient:
 
         linear speed = (xd, yd, zd, axd, ayd, azd)
         xd, yd, zd specify a translational velocity (mm/s)
-        axd, ayd, azd specify an axis-angle rotational velocity (rad/s)
+        axd, ayd, azd specify an axis-angle rotational velocity (deg/s)
         """
         self._state = self._con.receive()
         linear_speed = np.array(self._state.target_TCP_speed, dtype=np.float64)
         linear_speed[:3] /= self._scale_linear
+        linear_speed[3:] /= self._scale_angle
         return linear_speed
 
     def get_info(self):

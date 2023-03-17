@@ -14,7 +14,6 @@ np.set_printoptions(precision=2, suppress=True)
 
 
 def main():
-    base_frame = (0, 0, 0, 0, 0, 0)
     work_frame = (109.1, -487.0, 341.3, 180, 0, -90)  # base frame: x->right, y->back, z->up
     #     work_frame = (487.0, -109.1, 341.3, 180, 0, 180)    # base frame: x->front, y->right, z->up
 
@@ -26,7 +25,7 @@ def main():
         robot.linear_speed = 50
         robot.angular_speed = 5
         robot.coord_frame = work_frame
-        rtde_client = robot.sync_robot.controller._client
+        controller = robot.sync_robot.controller
 
         # Display robot info
         print("Robot info: {}".format(robot.info))
@@ -43,21 +42,21 @@ def main():
 
         # Single velocity move
         print("Making single velocity move, then stopping ...")
-        rtde_client.move_linear_speed((-20, -20, -20, 0, 0, 0), 10, 9)
-        rtde_client.stop_linear(10)
+        controller.move_linear_velocity((-20, -20, -20, 0, 0, 0), 10, 9)
+        controller.stop_linear_velocity(10)
 
         # Sequence of velocity moves
         print("Making multiple velocity moves, then stopping ...")
-        rtde_client.move_linear_speed((40, 0, 0, 0, 0, 0), 20, 3)
+        controller.move_linear_velocity((40, 0, 0, 0, 0, 0), 20, 3)
         print("Calculating next move ...")
         time.sleep(2)
-        rtde_client.move_linear_speed((0, 40, 0, 0, 0, 0), 20, 3)
+        controller.move_linear_velocity((0, 40, 0, 0, 0, 0), 20, 3)
         print("Calculating next move ...")
         time.sleep(2)
-        rtde_client.move_linear_speed((0, 0, 40, 0, 0, 0), 20, 3)
+        controller.move_linear_velocity((0, 0, 40, 0, 0, 0), 20, 3)
         print("Calculating next move ...")
         time.sleep(2)
-        rtde_client.stop_linear(10)
+        controller.stop_linear_velocity(10)
 
         print("Waiting for 5 secs ...")
         time.sleep(5)
@@ -77,10 +76,9 @@ def main():
                     worker_velocity = velocity
                     worker_accel = accel
                     worker_ret_time = ret_time
-                rtde_client.move_linear_speed(worker_velocity, worker_accel, worker_ret_time)
+                controller.move_linear_velocity(worker_velocity, worker_accel, worker_ret_time)
 
         thread = threading.Thread(target=worker, args=[], kwargs={})
-
         running = True
         thread.start()
 

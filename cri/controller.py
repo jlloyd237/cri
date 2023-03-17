@@ -511,6 +511,20 @@ class RTDEController(RobotController):
         return self._client.get_target_joint_angles()
 
     @property
+    def joint_velocities(self):
+        """Returns the current joint velocities.
+        """
+        joint_velocities = self._client.get_joint_speeds()
+        return joint_velocities
+
+    @property
+    def commanded_joint_velocities(self):
+        """Returns the commanded joint velocities.
+        """
+        joint_velocities = self._client.get_target_joint_speeds()
+        return joint_velocities
+
+    @property
     def pose(self):
         """Returns the current base frame pose.
         """
@@ -521,6 +535,18 @@ class RTDEController(RobotController):
         """Returns the commanded base frame pose.
         """
         return axangle2quat(self._client.get_target_pose())
+
+    @property
+    def linear_velocity(self):
+        """Returns the linear velocity.
+        """
+        return self._client.get_linear_speed()
+
+    @property
+    def commanded_linear_velocity(self):
+        """Returns the commanded linear velocity.
+        """
+        return self._client.get_target_linear_speed()
 
     @property
     def elbow(self):
@@ -548,6 +574,55 @@ class RTDEController(RobotController):
         if elbow is not None:
             warnings.warn("elbow property not implemented in RTDE controller")
         self._client.move_linear(quat2axangle(pose))
+
+    def move_joints_velocity(self, joints_velocity, joints_accel, return_time=None):
+        """Executes an immediate move to the specified joint velocities.
+
+        Accelerate linearly in joint space and continue with constant joint
+        speed. The return time is optional; if provided the function will
+        return after that time, regardless of the target speed has been reached.
+        If the return time is not provided, the function will return when the
+        target speed is reached.
+
+        joint_speeds = (jd0, jd1, jd2, jd3, jd4, jd5)
+        jd0, jd1, jd2, jd3, jd4, jd5 are numbered from base to end effector and are
+        measured in deg/s
+        joint_accel is measured in deg/s/s (of leading axis)
+        return_time is measured in secs before the function returns (optional)
+        """
+        joints_velocity = np.array(joints_velocity, dtype=np.float64).ravel()
+        self._client.move_joint_speed(joints_velocity, joints_accel, return_time)
+
+    def move_linear_velocity(self, linear_velocity, linear_accel, return_time=None):
+        """Executes an immediate move to the specified linear velocity.
+
+        Accelerate linearly in Cartesian space and continue with constant tool
+        speed. The return time is optional; if provided the function will return after
+        that time, regardless of the target speed has been reached. If the return time
+        is not provided, the function will return when the target speed is reached
+
+        linear speed = (xd, yd, zd, axd, ayd, azd)
+        xd, yd, zd specify a translational velocity (mm/s)
+        axd, ayd, azd specify an axis-angle rotational velocity (deg/s)
+        linear_accel is measured in mm/s/s
+        return_time is measured in secs before the function returns (optional)
+        """
+        linear_velocity = np.array(linear_velocity, dtype=np.float64).ravel()
+        self._client.move_linear_speed(linear_velocity, linear_accel, return_time)
+
+    def stop_joints_velocity(self, joints_accel):
+        """Decelerate joints velocity to zero.
+
+        joints_accel is measured in deg/s/s (of leading axis)
+        """
+        self._client.stop_joints(joints_accel)
+
+    def stop_linear_velocity(self, linear_accel):
+        """Decelerate linear speed to zero.
+
+        linear_accel is measured in mm/s/s
+        """
+        self._client.stop_linear(linear_accel)
 
     def move_circular(self, via_pose, end_pose, elbow=None):
         """Executes a movement in a circular path from the current base frame
@@ -912,6 +987,15 @@ class PyfrankaController(RobotController):
         pose = np.concatenate(self._client.commanded_pose)
         pose[:3] /= self._scale_linear
         return pose
+
+    @property
+    def linear_velocity(self):
+        """Returns the linear velocity.
+        """
+        linear_velocity = self._client.linear_velocity
+        linear_velocity[:3] /= self._scale_linear
+        linear_velocity[3:] /= self._scale_angle
+        return linear_velocity
 
     @property
     def desired_linear_velocity(self):
