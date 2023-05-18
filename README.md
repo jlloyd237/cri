@@ -35,7 +35,7 @@ For ABB and UR robots, the framework uses a client-server approach for communica
 
 For an ABB robot, upload the `/cri/abb/abb_server.mod` RAPID file to the controller, install it as the main program module under a new program and then run the program using the FlexPendant or RobotStudio application.
 
-For a UR robot, upload the `/cri/ur/rtde_server.script`URScript file to the controller, install it as the main script under a new program and then run the program using the Teach Pendant.
+For a UR robot, upload the `/cri/ur/rtde_server.script`URScript file to the controller, install it as the main script under a new program and then run the program using the Teach Pendant.  A helpful guide for installing the URScript file on UR robot controllers can be found [here](https://github.com/s-nam/UniversalRobots/blob/main/CRI_installation_guide/README.md).
 
 For a Franka Panda robot, a server script is not required as the communication with the controller takes place via `libfranka` and the Franka Control Interface (FCI).
 
